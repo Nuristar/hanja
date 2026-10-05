@@ -1,5 +1,5 @@
-// 오프라인 캐시: 앱 파일은 설치할 때, 글꼴은 처음 불러올 때 저장한다.
-var VERSION = 'hanja-v1';
+// 오프라인 캐시. 앱 화면은 인터넷이 되면 최신 파일을 먼저 받고, 안 되면 저장해 둔 파일을 쓴다.
+var VERSION = 'hanja-v3';
 var CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
@@ -14,24 +14,21 @@ self.addEventListener('activate', function (e) {
   );
 });
 
+function timeout(ms) { return new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, ms); }); }
+
 self.addEventListener('fetch', function (e) {
   var req = e.request;
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
   var isFont = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
-  var sameOrigin = url.origin === self.location.origin;
-  if (!isFont && !sameOrigin) return;
+  if (!isFont && url.origin !== self.location.origin) return;
 
   if (req.mode === 'navigate') {
-    // 화면 이동은 캐시를 먼저 보여 주고, 뒤에서 새 버전을 받아 둔다.
     e.respondWith(
-      caches.match('./index.html').then(function (hit) {
-        var net = fetch(req).then(function (res) {
-          if (res && res.ok) { var copy = res.clone(); caches.open(VERSION).then(function (c) { c.put('./index.html', copy); }); }
-          return res;
-        }).catch(function () { return hit; });
-        return hit || net;
-      })
+      Promise.race([fetch('./index.html', { cache: 'no-store' }), timeout(3000)]).then(function (res) {
+        if (res && res.ok) { var copy = res.clone(); caches.open(VERSION).then(function (c) { c.put('./index.html', copy); }); }
+        return res;
+      }).catch(function () { return caches.match('./index.html'); })
     );
     return;
   }
