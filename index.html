@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>한자 뜻맞추기</title>
+<meta name="theme-color" content="#eceff4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1424" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="한자 2급">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Concept: 서예 연습지. 칸이 그어진 종이 위에 한자 한 글자, 아래에 사지선다. 인디고 잉크와 차가운 종이색. */
+:root {
+  --paper: #eceff4;
+  --card: #ffffff;
+  --ink: #18223a;
+  --ink-2: #566179;
+  --line: #d2d9e5;
+  --tint: #e2e7f5;
+  --accent: #2d45a8;
+  --on-accent: #ffffff;
+  --good: #1b7a52;
+  --good-bg: #daf1e5;
+  --bad: #b3372f;
+  --bad-bg: #f8e1de;
+  --font-ui: 'IBM Plex Sans KR', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-han: 'Noto Serif KR', 'AppleMyungjo', 'Batang', 'Hiragino Mincho ProN', 'Songti SC', 'MingLiU', serif;
+  --box: min(58vw, 232px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1424; --card: #161e34; --ink: #e8ecf7; --ink-2: #9ba7c2; --line: #2a3553; --tint: #1e2847;
+    --accent: #93a8ff; --on-accent: #0e1424; --good: #66d3a3; --good-bg: #15392c; --bad: #ff9088; --bad-bg: #3e1c1c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e1424; --card: #161e34; --ink: #e8ecf7; --ink-2: #9ba7c2; --line: #2a3553; --tint: #1e2847;
+  --accent: #93a8ff; --on-accent: #0e1424; --good: #66d3a3; --good-bg: #15392c; --bad: #ff9088; --bad-bg: #3e1c1c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: var(--font-ui); font-size: 16px; line-height: 1.5;
+  padding-inline: 16px; padding-block: 24px 48px; min-height: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 640px; margin-inline: auto; display: grid; gap: 24px; }
+h1 { margin: 0; font-size: 1.75rem; line-height: 1.2; font-weight: 700; text-wrap: balance; }
+.eyebrow { margin: 0 0 6px; font-size: .8125rem; letter-spacing: .08em; color: var(--ink-2); font-weight: 500; }
+.lede { margin: 8px 0 0; color: var(--ink-2); font-size: .9375rem; }
+.han-mark { font-family: var(--font-han); font-weight: 700; color: var(--accent); }
+
+/* setup */
+.group { display: grid; gap: 10px; }
+.group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.label { margin: 0; font-size: .8125rem; font-weight: 600; color: var(--ink-2); letter-spacing: .06em; }
+.link { background: none; border: 0; padding: 4px 0; color: var(--accent); font-size: .875rem; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
+.link:disabled { color: var(--ink-2); opacity: .5; text-decoration: none; cursor: default; }
+.files { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.chip {
+  background: var(--card); border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px;
+  text-align: left; display: grid; gap: 2px; min-width: 0; transition: border-color .15s, background .15s;
+}
+.chip b { font-size: 1.0625rem; font-weight: 600; }
+.chip span { font-size: .8125rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.chip[aria-pressed="true"] span { color: inherit; opacity: .85; }
+.chip:disabled { opacity: .5; cursor: default; }
+.seg { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg button {
+  background: var(--card); border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 16px; min-height: 44px;
+  font-weight: 500; transition: border-color .15s, background .15s;
+}
+.seg button[aria-pressed="true"] { background: var(--tint); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.nb { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.nb .chip { flex: 1 1 220px; grid-template-columns: 1fr auto; align-items: center; }
+.nb .chip span { font-size: .875rem; }
+.start-wrap { display: grid; gap: 8px; }
+.primary {
+  background: var(--accent); color: var(--on-accent); border: 0; border-radius: 14px; min-height: 54px; padding: 0 20px;
+  font-size: 1.0625rem; font-weight: 700; letter-spacing: .02em;
+}
+.primary:disabled { opacity: .45; cursor: default; }
+.primary.small { min-height: 44px; font-size: .9375rem; border-radius: 10px; padding: 0 18px; }
+.secondary {
+  background: var(--card); color: var(--ink); border: 1.5px solid var(--line); border-radius: 14px; min-height: 50px; padding: 0 18px; font-weight: 600;
+}
+.sum { margin: 0; text-align: center; font-size: .875rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+/* play */
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ghost { background: none; border: 0; padding: 8px 4px; color: var(--ink-2); font-weight: 500; }
+.prog, .scorebox { font-variant-numeric: tabular-nums; font-weight: 600; }
+.scorebox { color: var(--ink-2); font-weight: 500; font-size: .9375rem; display: flex; gap: 8px; align-items: baseline; }
+.scorebox b { color: var(--ink); font-weight: 700; }
+.streak { color: var(--good); font-weight: 600; font-size: .8125rem; }
+.meter, .timer { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .25s ease; border-radius: 99px; }
+.timer { height: 4px; margin-top: -14px; }
+.timer i { display: block; height: 100%; width: 100%; background: var(--ink-2); transform-origin: left; }
+.timer i.low { background: var(--bad); }
+#play { display: grid; gap: 18px; }
+.q-card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px 16px;
+  display: grid; justify-items: center; align-content: center; gap: 12px; min-height: 200px;
+}
+.q-label { margin: 0; font-size: .875rem; color: var(--ink-2); font-weight: 500; }
+.mi {
+  position: relative; width: var(--box); height: var(--box); color: var(--line);
+  border: 1.5px solid var(--ink-2); border-radius: 4px; display: grid; place-items: center;
+}
+.mi svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mi .g { position: relative; font-family: var(--font-han); font-weight: 500; font-size: calc(var(--box) * .68); line-height: 1; color: var(--ink); }
+.mean { font-size: clamp(1.75rem, 8vw, 2.5rem); font-weight: 700; line-height: 1.25; text-align: center; text-wrap: balance; padding-block: 18px; }
+.opts { display: grid; gap: 10px; }
+.opts.han { grid-template-columns: 1fr 1fr; }
+.opt {
+  position: relative; background: var(--card); border: 1.5px solid var(--line); border-radius: 12px; min-height: 58px;
+  padding: 10px 14px 10px 44px; text-align: left; font-size: 1.125rem; font-weight: 500; transition: border-color .12s, background .12s, opacity .12s;
+}
+.opt kbd {
+  position: absolute; left: 12px; top: 50%; translate: 0 -50%; width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center;
+  font: 600 .75rem var(--font-ui); background: var(--tint); color: var(--accent); font-variant-numeric: tabular-nums;
+}
+.opts.han .opt { padding: 8px; min-height: 108px; display: grid; place-items: center; text-align: center; }
+.opts.han .opt kbd { left: 8px; top: 8px; translate: none; }
+.opt .hg { font-family: var(--font-han); font-size: 3.4rem; line-height: 1.1; font-weight: 500; }
+.opt:not(:disabled):hover { border-color: var(--accent); }
+.opt:disabled { cursor: default; }
+.opt.is-correct { background: var(--good-bg); border-color: var(--good); color: var(--ink); }
+.opt.is-correct kbd { background: var(--good); color: var(--card); }
+.opt.is-wrong { background: var(--bad-bg); border-color: var(--bad); }
+.opt.is-wrong kbd { background: var(--bad); color: var(--card); }
+.opt.dim { opacity: .55; }
+.feedback { min-height: 92px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.fb-text { display: grid; gap: 2px; min-width: 0; flex: 1 1 200px; }
+.fb-status { font-weight: 700; font-size: 1rem; }
+.fb-status.ok { color: var(--good); }
+.fb-status.no { color: var(--bad); }
+.fb-detail { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.fb-detail .g { font-family: var(--font-han); font-size: 1.75rem; font-weight: 700; line-height: 1.2; }
+.fb-detail .m { color: var(--ink-2); font-size: .9375rem; }
+
+/* result */
+#result { display: grid; gap: 22px; }
+.score-line { display: flex; align-items: baseline; gap: 8px; }
+.pct { font-size: 3.5rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; color: var(--accent); }
+.pct small { font-size: 1.5rem; font-weight: 600; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0; }
+.stat span { font-size: .8125rem; color: var(--ink-2); }
+.stat b { font-size: 1.25rem; font-variant-numeric: tabular-nums; font-weight: 700; }
+.wrong-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.w { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0; }
+.w .g { font-family: var(--font-han); font-size: 2rem; font-weight: 700; line-height: 1.2; }
+.w .m { font-size: .875rem; color: var(--ink-2); overflow-wrap: anywhere; }
+.actions { display: grid; gap: 10px; }
+.perfect { margin: 0; padding: 16px; background: var(--good-bg); border-radius: 12px; color: var(--ink); font-weight: 500; }
+
+@media (min-width: 520px) { .actions { grid-template-columns: 1fr 1fr; } .actions .primary { grid-column: 1 / -1; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<style>
+/* 단독 앱용 기본 설정 */
+html { -webkit-text-size-adjust: 100%; }
+:root { color-scheme: light dark; padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
+body { margin: 0; }
+[hidden] { display: none !important; }
+button { touch-action: manipulation; }
+body { -webkit-user-select: none; user-select: none; }
+</style>
+
+
+</head>
+<body>
+<div class="wrap">
+
+  <section id="setup" style="display:grid;gap:24px">
+    <header>
+      <p class="eyebrow">진흥회 한자 2급 대비</p>
+      <h1><span class="han-mark">漢字</span> 뜻맞추기</h1>
+      <p class="lede" id="lede"></p>
+    </header>
+
+    <div class="group">
+      <div class="group-head">
+        <p class="label">범위</p>
+        <button class="link" type="button" id="toggle-all"></button>
+      </div>
+      <div class="files" id="files"></div>
+      <div class="nb">
+        <button class="chip" type="button" id="nb" aria-pressed="false"><b>오답 노트로 연습</b><span><span id="nb-count">0</span>자</span></button>
+        <button class="link" type="button" id="nb-clear">오답 노트 비우기</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <p class="label">출제 방식</p>
+      <div class="seg" role="group" aria-label="출제 방식">
+        <button type="button" data-dir="h2m">한자 보고 훈음 고르기</button>
+        <button type="button" data-dir="m2h">훈음 보고 한자 고르기</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <p class="label">문제 수</p>
+      <div class="seg" role="group" aria-label="문제 수" id="counts">
+        <button type="button" data-count="10">10</button>
+        <button type="button" data-count="20">20</button>
+        <button type="button" data-count="50">50</button>
+        <button type="button" data-count="100">100</button>
+        <button type="button" data-count="0">전체</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <p class="label">문제당 제한 시간</p>
+      <div class="seg" role="group" aria-label="제한 시간">
+        <button type="button" data-time="0">없음</button>
+        <button type="button" data-time="10">10초</button>
+        <button type="button" data-time="5">5초</button>
+        <button type="button" data-time="3">3초</button>
+      </div>
+    </div>
+
+    <div class="start-wrap">
+      <button class="primary" type="button" id="start">시작하기</button>
+      <p class="sum" id="sum"></p>
+    </div>
+  </section>
+
+  <section id="play" hidden>
+    <div class="bar">
+      <button class="ghost" type="button" id="quit">← 그만</button>
+      <div class="prog"><span id="pn">1</span> / <span id="pt">20</span></div>
+      <div class="scorebox">맞힌 <b id="ps">0</b><span class="streak" id="pstreak" hidden></span></div>
+    </div>
+    <div class="meter" aria-hidden="true"><i id="pbar"></i></div>
+    <div class="timer" id="timer" hidden aria-hidden="true"><i id="tbar"></i></div>
+    <div class="q-card" id="qcard"></div>
+    <div class="opts" id="opts"></div>
+    <div class="feedback" id="fb" aria-live="polite"></div>
+  </section>
+
+  <section id="result" hidden>
+    <header>
+      <p class="eyebrow">결과</p>
+      <div class="score-line"><span class="pct" id="r-pct">0<small>%</small></span><span id="r-frac" class="lede" style="margin:0"></span></div>
+    </header>
+    <div class="stats">
+      <div class="stat"><span>맞힌 문제</span><b id="r-ok">0</b></div>
+      <div class="stat"><span>걸린 시간</span><b id="r-time">0:00</b></div>
+      <div class="stat"><span>최다 연속</span><b id="r-best">0</b></div>
+    </div>
+    <div class="group" id="r-wrong-box">
+      <p class="label">틀린 한자</p>
+      <div class="wrong-grid" id="r-wrong"></div>
+    </div>
+    <div class="actions">
+      <button class="primary" type="button" id="r-retry-wrong">틀린 한자만 다시 풀기</button>
+      <button class="secondary" type="button" id="r-again">같은 설정으로 다시</button>
+      <button class="secondary" type="button" id="r-home">처음으로</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  var DATA = [[1,"壹","하나 일;한 일"],[1,"貳","두 이"],[1,"液","진(액) 액"],[1,"禍","재앙 화"],[1,"遜","겸손 손"],[1,"尖","뾰족할 첨"],[1,"濕","젖을 습"],[1,"該","그 해;갖출 해;해당 해"],[1,"寡","적을 과"],[1,"抑","누를 억"],[1,"痕","흉터 흔;흔적 흔"],[1,"枯","마를 고"],[1,"恐","두려울 공"],[1,"紡","길쌈 방;짤 방"],[1,"駐","머무를 주"],[1,"絞","목맬 교;맬 교"],[1,"狡","교활할 교;사나울 교"],[1,"零","떨어질 령;영(0) 령"],[1,"齡","나이 령"],[1,"附","붙을 부"],[1,"符","부신 부;부적 부"],[1,"腐","썩을 부"],[1,"按","살필 안;만질 안"],[1,"晏","늦을 안"],[1,"鞍","안장 안"],[1,"倣","본받을 방"],[1,"傍","곁 방"],[1,"砲","대포 포"],[1,"飽","배부를 포"],[1,"違","어긋날 위;어길 위"],[1,"緯","씨줄 위;위선 위"],[1,"裳","치마 상"],[1,"忌","꺼릴 기"],[1,"覆","덮을 부;엎을 복"],[1,"憎","미워할 증"],[1,"贈","줄 증"],[1,"叛","배반 반"],[1,"僧","중 승"],[1,"曜","빛날 요"],[1,"熙","빛날 희"],[1,"炅","빛날 경"],[1,"懇","정성 간;간절할 간"],[1,"朗","밝을 랑"],[1,"廊","행랑 랑"],[1,"桐","오동나무 동"],[1,"恣","방자할 자"],[1,"諮","물을 자"],[1,"胎","아이밸 태;태 태"],[1,"怠","게으를 태"],[1,"殆","위태할 태;거의 태"],[1,"颱","태풍 태"],[1,"巷","거리 항"],[1,"楊","버들 양"],[1,"珠","구슬 주"],[1,"洙","물이름 수;물가 수"],[1,"殊","다를 수"],[1,"惟","생각할 유"],[1,"裏","속 리"],[1,"埋","묻을 매"],[1,"召","부를 소"],[1,"昭","밝을 소"],[1,"紹","이을 소;소개 소"],[1,"振","떨친 진;떨 진"],[1,"震","벼락 진;우레 진"],[1,"晨","새벽 신"],[1,"蔑","업신여길 멸"],[1,"挑","돋울 도"],[1,"桃","복숭아 도"],[1,"跳","뛸 도"],[1,"躍","뛸 약"],[1,"伯","맏(이) 백"],[1,"柏","잣나무 백"],[1,"魄","넋 백"],[1,"魂","넋 혼"],[1,"莊","장엄할 장;별장 장"],[1,"罔","없을 망"],[1,"網","그물 망"],[1,"茫","망망할 망;아득할 망"],[1,"眉","눈썹 미"],[1,"荷","연꽃 하;짐 하"],[1,"排","물리칠 배"],[1,"俳","광대 배"],[1,"僑","객지살 교;타향살 교"],[1,"矯","바로잡을 교;고칠 교"],[1,"閣","누각 각;다락 각"],[1,"絡","맥락 락;얽힐 락;이을 락"],[1,"洛","강이름 락;물 락"],[1,"譯","번역할 역"],[1,"釋","풀 석"],[1,"蹟","발자취 적"],[1,"緖","실마리 서"],[1,"鑛","쇳돌 광;쇳덩이 광"],[1,"擴","넓힐 확"],[1,"橫","가로 횡"],[1,"鑑","거울 감"],[1,"濫","넘칠 람"],[1,"藍","쪽 람"],[1,"鹽","소금 염"],[1,"詳","자세할 상"],[1,"嗚","탄식할 오;슬플 오"],[2,"貰","세낼 세"],[2,"蝶","나비 접"],[2,"諜","염탐할 첩"],[2,"琴","거문고 금"],[2,"含","머금을 함"],[2,"貪","탐할 탐"],[2,"閱","검열할 열;볼 열"],[2,"侮","업신여길 모"],[2,"碩","클 석"],[2,"碧","푸를 벽"],[2,"夷","오랑캐 이;클 이"],[2,"封","봉할 봉"],[2,"墻","담장 장"],[2,"輿","수레 여;무리 여"],[2,"譽","기릴 예;명예 예"],[2,"腎","콩팥 신"],[2,"脣","입술 순"],[2,"肩","어깨 견"],[2,"筋","힘줄 근;힘살 근"],[2,"擊","칠 격"],[2,"閥","문벌 벌;가문 벌"],[2,"輯","모을 집"],[2,"肝","간 간"],[2,"幹","줄기 간"],[2,"拍","칠 박"],[2,"泊","배댈 박;머무를 박"],[2,"迫","핍박할 박;가까울 박"],[2,"舶","큰배 박;배 박"],[2,"析","가를 석;쪼갤 석"],[2,"折","꺾을 절"],[2,"編","엮을 편;짤 편"],[2,"偏","치우칠 편"],[2,"遍","두루 편"],[2,"蜂","벌 봉"],[2,"縫","꿰맬 봉"],[2,"鷗","갈매기 구"],[2,"歐","토할 구"],[2,"驅","몰 구"],[2,"摘","딸 적;따올 적"],[2,"滴","물방울 적"],[2,"磨","갈 마"],[2,"摩","문지를 마"],[2,"魔","마귀 마"],[2,"森","빽빽할 삼;수풀 삼"],[2,"箱","상자 상"],[2,"靴","가죽신 화;신발 화"],[2,"拘","잡을 구;묶을 구"],[2,"狗","개 구"],[2,"載","실을 재"],[2,"裁","옷마를 재;지을 재"],[2,"蒼","푸를 창"],[2,"滄","큰바다 창"],[2,"畏","두려울 외"],[2,"苗","싹 묘"],[2,"圈","둘레 권;쌀 권"],[2,"僅","겨우 근;적을 근"],[2,"槿","무궁화 근"],[2,"詞","말 사"],[2,"飼","먹일 사"],[2,"臭","냄새 취"],[2,"偶","짝 우;우연 우"],[2,"禹","우임금 우;하우씨 우"],[2,"鍊","단련할 련;쇠불릴 련"],[2,"煉","달굴 련;쇠불릴 련"],[2,"諫","간할 간"],[2,"淚","눈물 루"],[2,"裂","찢을 렬;찢어질 렬"],[2,"翁","늙은이 옹"],[2,"軟","연할 연;약할 연"],[2,"旨","뜻 지"],[2,"脂","기름 지;비계 지"],[2,"嘗","맛볼 상;시험볼 상"],[2,"軒","처마 헌;수레 헌"],[2,"牙","어금니 아"],[2,"芽","싹 아;싹틀 아"],[2,"邪","간사할 사"],[2,"弗","아니 불;돈 불"],[2,"訣","이별할 결;비결 결"],[2,"竝","나란히 병;함께 병"],[2,"培","북돋울 배"],[2,"賠","배상할 배;갚을 배"],[2,"鬼","귀신 귀"],[2,"傀","꼭두각시 괴;허수아비 괴"],[2,"塊","흙덩이 괴"],[2,"愧","부끄러울 괴"],[2,"滑","미끄러울 활"],[2,"侍","모실 시"],[2,"憾","한할 감;유감 감"],[2,"刃","칼날 인"],[2,"謀","꾀 모"],[2,"媒","중매 매"],[2,"禱","빌 도"],[2,"鑄","부어만들 주;쇠불릴 주"],[2,"默","잠잠할 묵;말없을 묵"],[2,"勳","공 훈"],[2,"翼","날개 익"],[2,"縣","고을 현"],[2,"懸","매달 현"],[2,"戴","일 대;받들 대"],[2,"尿","오줌 뇨"],[3,"娩","해산할 만"],[3,"怖","두려울 포"],[3,"稀","드물 희"],[3,"屍","주검 시"],[3,"週","돌 주"],[3,"彫","새길 조;꾸밀 조"],[3,"殃","재앙 앙"],[3,"歪","비뚤 왜;비뚤 외"],[3,"寂","고요 적"],[3,"硏","벼루 연"],[3,"閨","안방 규"],[3,"桂","계수나무 계"],[3,"寬","너그러울 관"],[3,"螢","반딧불 형"],[3,"敍","차례 서;펼 서"],[3,"顯","나타날 현"],[3,"錯","섞일 착"],[3,"葛","칡 갈"],[3,"謁","뵐 알;아뢸 알"],[3,"揭","높이들게;걸 게"],[3,"謙","겸손할 겸"],[3,"廉","청렴할 렴"],[3,"嫌","싫어할 혐;의심할 혐"],[3,"斬","벨 참"],[3,"慙","부끄러울 참"],[3,"暫","잠깐 잠"],[3,"漸","점차 점;점점 점"],[3,"途","길 도;도중 도"],[3,"塗","바를 도;진흙 도"],[3,"斜","비낄 사;기울 사"],[3,"徐","천천히 서"],[3,"蜜","꿀 밀"],[3,"矛","창 모"],[3,"霧","안개 무"],[3,"播","뿌릴 파"],[3,"輝","빛날 휘"],[3,"審","살필 심"],[3,"赴","다다를 부"],[3,"卦","점괘 괘"],[3,"掛","걸 괘"],[3,"飜","뒤칠 번;바꿀 번"],[3,"御","어거할 거;임금 어"],[3,"微","작을 미;가늘 미"],[3,"徵","부를 징"],[3,"懲","징계할 징"],[3,"兔","토끼 토"],[3,"豹","표범 표"],[3,"龜","거북 귀;이름 구;터질 균"],[3,"禽","새 금"],[3,"燕","제비 연"],[3,"鶴","학 학"],[3,"鴻","큰기러기 홍"],[3,"紫","자주빛 자;자색 자"],[3,"菊","국화 국"],[3,"雌","암컷 자"],[3,"匪","도둑 비"],[3,"竊","훔칠 절;도둑 절"],[3,"雙","쌍 쌍"],[3,"暢","화창할 창;통할 창"],[3,"湯","끓을 탕"],[3,"詠","읊을 영"],[3,"菓","과자 과"],[3,"幣","폐백 폐;돈 폐"],[3,"弊","해질 폐;폐단 폐"],[3,"蔽","덮을 폐;가릴 폐"],[3,"剛","굳셀 강"],[3,"綱","벼리 강"],[3,"賦","구실 부;부과 부"],[3,"卑","낮을 비;천할 비"],[3,"碑","비석 비"],[3,"婢","계집종 비;여종 비"],[3,"梧","오동나무 오"],[3,"遵","좇을 준;따를 준"],[3,"釣","낚을 조;낚시 조"],[3,"捉","잡을 착"],[3,"促","재촉할 촉"],[3,"騷","시끄러울 소"],[3,"蔘","삼 삼;인삼 삼"],[3,"慘","참혹할 참;슬플 참"],[3,"騎","말탈 기"],[3,"遮","막을 차;가릴 차"],[3,"垈","터 대"],[3,"盤","소반 반;쟁반 반"],[3,"搬","운반할 반;옮길 반"],[3,"尹","다스릴 윤;성씨 윤"],[3,"伊","저 이"],[3,"孃","아가씨 양"],[3,"琢","쪼을 탁;다듬을 탁"],[3,"型","틀 형;본보기 형"],[3,"竟","마침내 경;마칠 경"],[3,"騰","오를 등"],[3,"謄","베낄 등"],[3,"藤","등나무 등"],[3,"據","의거할 거;증거 거"],[3,"劇","심할 극"],[3,"玆","이 자;무성할 자"],[3,"磁","자석 자"],[3,"似","같을 사"],[3,"彩","채색 채"],[3,"厭","싫을 염"],[4,"侯","제후 후;벼슬 후"],[4,"喉","목구멍 후"],[4,"廟","사당 묘"],[4,"徑","지름길 경"],[4,"墮","떨어질 타"],[4,"隨","따를 수"],[4,"祿","녹 록;복 록"],[4,"寢","잠잘 침"],[4,"庸","떳떳할 용"],[4,"傭","품팔 용"],[4,"雁","기러기 안"],[4,"憤","분할 분"],[4,"墳","무덤 분"],[4,"瓜","오이 과"],[4,"館","집 관;객사 관"],[4,"姙","아이밸 임"],[4,"賃","품팔이 임;세낼 임"],[4,"奮","떨칠 분"],[4,"奪","뺏을 탈"],[4,"幕","장막 막;군막 막"],[4,"漠","사막 막;아득할 막"],[4,"攝","끌어잡을 섭;당길 섭"],[4,"凝","엉길 응"],[4,"玄","검을 현;가물 현"],[4,"弦","활시위 현;활줄 현"],[4,"蹴","찰 축"],[4,"滯","막힐 체"],[4,"蘭","난초 란"],[4,"爛","빛날 란"],[4,"欄","난간 란"],[4,"帥","장수 수"],[4,"搖","흔들 요"],[4,"遙","멀 요;거닐 요"],[4,"瑞","상서로울 서;길할 서"],[4,"伸","펼 신"],[4,"紳","큰띠 신;신사 신"],[4,"衡","저울 형"],[4,"核","씨 핵"],[4,"縮","줄어질 축;줄 축"],[4,"隱","숨을 은"],[4,"漂","뜰 표"],[4,"標","표할 표;표시할 표"],[4,"艇","거룻배 정;배 정"],[4,"爐","화로 로"],[4,"劑","약지을 제"],[4,"坪","들 평;평수 평"],[4,"郊","들 교"],[4,"叫","부르짖을 규;외침 규"],[4,"糾","살필 규;얽힐 규"],[4,"幅","폭 폭"],[4,"噫","탄식할 희"],[4,"冥","어두울 명"],[4,"誦","외울 송"],[4,"替","바꿀 체"],[4,"換","바꿀 환"],[4,"旋","돌 선"],[4,"屯","모을 둔"],[4,"鈍","무딜 둔;둔할 둔"],[4,"軸","굴대 축"],[4,"軌","굴대 궤;바퀴자국 궤"],[4,"津","나루 진;물가 진"],[4,"簿","문서 부;장부 부"],[4,"伴","짝 반"],[4,"締","맺을 체"],[4,"僻","후미질 벽;궁벽할 벽"],[4,"豫","미리 예"],[4,"穽","함정 정"],[4,"獸","짐승 수"],[4,"獻","드릴 헌"],[4,"疏","트일 소;성길 소"],[4,"虜","사로잡을 로"],[4,"妖","요망할 요;요사스러울 요"],[4,"互","서로 호"],[4,"燭","촛불 촉;불밝힐 촉"],[4,"觸","부딪칠 촉"],[4,"濁","흐릴 탁"],[4,"壞","무너질 괴"],[4,"懷","품을 회"],[4,"彰","빛날 창;나타날 창"],[4,"勵","힘쓸 려"],[4,"愼","삼갈 신"],[4,"霸","으뜸 패"],[4,"影","그림자 영"],[4,"諒","살필 량;믿을 량"],[4,"掠","노략질할 략;뺏을 략"],[4,"脈","맥 맥"],[4,"斥","물리칠 척"],[4,"訴","하소연할 소;소송 소"],[4,"趣","취미 취;뜻 취;달릴 취"],[4,"穴","구멍 혈"],[4,"忽","갑자기 홀;문득 홀"],[4,"朔","초하루 삭"],[4,"屢","자주 루;여러 루"],[4,"樓","다락 루;누각 루"],[4,"粟","조(좁쌀) 속"],[4,"汗","땀 한"],[4,"旱","가물 한"],[4,"灰","재 회"],[4,"謂","이를 위;말할 위"],[4,"膚","살갗 부;가죽 부"],[5,"廢","버릴 폐;못쓸 폐"],[5,"踏","밟을 답"],[5,"累","여러 루;자주 루"],[5,"需","구할 수;쓰일 수"],[5,"旦","아침 단"],[5,"遂","이룰 수;드디어 수;다할 수"],[5,"逐","쫓을 축;좇아낼 축"],[5,"辨","분별할 변"],[5,"宰","재상 재"],[5,"割","벨 할"],[5,"坑","구덩이 갱;구멍 갱"],[5,"赦","용서할 사"],[5,"跡","발자취 적"],[5,"郭","성곽 곽"],[5,"繫","얽어맬 계"],[5,"孰","누구 숙"],[5,"俱","함께 구"],[5,"腰","허리 요"],[5,"唐","당나라 당"],[5,"糖","엿 당;달 탕"],[5,"把","잡을 파"],[5,"猛","사나울 맹"],[5,"携","끌 휴;낄 휴"],[5,"屈","굽을 굴"],[5,"窟","굴 굴"],[5,"貌","모양 모"],[5,"殖","번식 식"],[5,"崩","무너질 붕"],[5,"措","둘 조"],[5,"纖","가늘 섬"],[5,"沐","목욕 목"],[5,"厥","그 궐"],[5,"闕","집 궐;대궐 궐"],[5,"倂","아우를 병;함께 병"],[5,"屛","병풍 병"],[5,"況","하물며 황;모양 황"],[5,"惹","이끌 야;끌 야"],[5,"稚","어릴 치"],[5,"匿","숨길 닉;감출 닉"],[5,"沈","잠길 침;성씨 심"],[5,"枕","베개 침"],[5,"拙","못날 졸;졸할 졸"],[5,"劣","못할 열;열등 열"],[5,"諾","허락 낙"],[5,"迷","미혹할 미;길잃을 미"],[5,"汽","물끓는김 기;김 기"],[5,"鎔","녹일 용;쇠녹일 용"],[5,"籠","새장 롱;대그릇 롱;다래끼 롱"],[5,"炊","불땔 취"],[5,"襲","엄습 습;덮칠 습"],[5,"凍","얼 동"],[5,"棟","마룻대 동;집 동"],[5,"寧","편안 녕"],[5,"寵","사랑 총"],[5,"殉","따라죽을 순"],[5,"賴","힘입을 뢰;믿을 뢰"],[5,"肖","닮을 초;작을 초"],[5,"汎","뜰 범"],[5,"誓","맹세할 서;맹서할 서"],[5,"哨","망볼 초"],[5,"偵","정탐할 정;살필 정"],[5,"削","깎을 삭"],[5,"添","더할 첨"],[5,"鍛","단련할 단"],[5,"鳳","봉황 봉"],[5,"凰","봉황 황"],[5,"尼","여승 니"],[5,"泥","진흙 니"],[5,"抽","뽑을 추"],[5,"陷","빠질 함"],[5,"沒","빠질 몰"],[5,"笛","피리 적"],[5,"淫","음란할 음"],[5,"鼓","북 고"],[5,"雇","품팔이 고;품삯 고"],[5,"顧","돌아볼 고;돌볼 고"],[5,"陶","질그릇 도"],[5,"濃","짙을 농"],[5,"遞","갈마들 체;우체 체"],[5,"檀","박달나무 단"],[5,"韻","운 운;울림 운"],[5,"僚","동료 료;무리 료"],[5,"療","병고칠 료"],[5,"俸","녹 봉;봉급 봉"],[5,"惑","미혹할 혹;유혹 혹"],[5,"悽","슬플 처"],[5,"薦","천거할 천"],[5,"潭","못 담"],[5,"翰","글 한;날개 한;편지 한"],[5,"札","편지 찰;패 찰"],[5,"潛","잠길 잠"],[5,"蠶","누에 잠"],[5,"汚","더러울 오"],[5,"染","물들 염"],[5,"梁","들보 량;다리 량"],[5,"托","맡길 탁;밀 탁;받칠 탁"],[5,"託","부탁 탁"],[5,"啓","열 계"],[5,"蒙","어릴 몽"],[5,"夢","꿈 몽"],[6,"燃","불탈 연;불사를 연"],[6,"棄","버릴 기"],[6,"卿","벼슬 경"],[6,"爵","벼슬 작"],[6,"禾","벼 화"],[6,"阿","언덕 아"],[6,"陵","언덕 릉"],[6,"苑","나라동산 원"],[6,"聘","부를 빙;청할 빙"],[6,"徹","통할 철"],[6,"撤","거둘 철"],[6,"葬","장사지낼 장"],[6,"仲","버금 중;중개 중"],[6,"藏","감출 장"],[6,"臟","오장 장"],[6,"舜","순임금 순"],[6,"瞬","눈깜짝할 순;잠깐 순"],[6,"粧","단장할 장;꾸밀 장"],[6,"飾","꾸밀 식"],[6,"毫","가는털 호"],[6,"豪","호걸 호"],[6,"奏","아뢸 주"],[6,"奚","어찌 해"],[6,"謬","그릇될 류"],[6,"膠","아교 교;붙일 교"],[6,"却","물리칠 각"],[6,"唆","부추길 사"],[6,"酸","실 산"],[6,"洲","물가 주"],[6,"遣","보낼 견"],[6,"閏","윤달 윤"],[6,"潤","윤택할 윤"],[6,"縱","세로 종"],[6,"緊","굳게얽을 긴;긴요할 긴"],[6,"讚","기릴 찬;칭찬 찬"],[6,"禪","고요할 선;참선 선"],[6,"楓","단풍 풍"],[6,"慢","거만할 만;게으를 만"],[6,"漫","물질펀할 만;흩어질 만"],[6,"丘","언덕 구"],[6,"岳","큰산 악"],[6,"頻","자주 빈"],[6,"盾","방패 순"],[6,"循","돌 순;좇을 순"],[6,"罷","파할 파;마칠 파"],[6,"僞","거짓 위"],[6,"峽","골짜기 협"],[6,"殿","대궐 전;큰집 전"],[6,"購","살 구;사올 구"],[6,"簡","대쪽 간;간략할 간"],[6,"厄","재앙 액;액운 액"],[6,"垂","드리울 수"],[6,"睡","졸 수"],[6,"戲","희롱할 희"],[6,"虐","사나울 학;모질 학"],[6,"廳","청사 청;관청 청"],[6,"惱","괴로워할 뇌;고뇌 뇌"],[6,"予","나 여;줄 여"],[6,"預","미리 예;맡길 예"],[6,"頃","잠깐 경;이랑 경"],[6,"渡","물건널 도"],[6,"緩","느릴 완"],[6,"曆","책력 력"],[6,"透","통할 투"],[6,"誘","꾈 유"],[6,"銃","총 총"],[6,"堯","임금 요;높을 요"],[6,"燒","불사를 소"],[6,"曉","새벽 효"],[6,"悼","슬플 도"],[6,"燥","마를 조"],[6,"麗","고울 려"],[6,"塵","티끌 진;먼지 진"],[6,"廻","돌아올 회;돌 회"],[6,"賓","손님 빈"],[6,"概","대개 개"],[6,"慨","슬플 개"],[6,"隣","이웃 린"],[6,"憐","불쌍할 련"],[6,"憫","불쌍할 민"],[6,"掌","손바닥 장"],[6,"握","잡을 악;쥘 악"],[6,"隆","높을 륭"],[6,"幽","그윽할 유;깊을 유"],[6,"靈","신령 령"],[6,"率","거느릴 솔;비율 률;이끌 솔"],[6,"升","되 승"],[6,"昇","오를 승"],[6,"飢","굶주릴 기"],[6,"診","진찰할 진"],[6,"臺","대 대;높은집 대"],[6,"膽","쓸개 담"],[6,"畜","기를 축;짐승 축"],[6,"蓄","모을 축;저축할 축"],[6,"搜","찾을 수"],[6,"尋","찾을 심"],[6,"胡","오랑캐 호"],[6,"娛","즐거워할 오;즐길 오"],[6,"尉","벼슬이름 위;벼슬 위"],[6,"慰","위로할 위"],[7,"脅","위협할 협;갈비대 협"],[7,"憩","쉴 게"],[7,"疫","염병 역;병 역"],[7,"敦","도타울 돈;두터울 돈"],[7,"篤","도타울 독;두터울 독"],[7,"蠻","오랑캐 만"],[7,"灣","물굽이 만"],[7,"隔","막을 격;사이뜰 격"],[7,"塞","변방 새;막을 색"],[7,"碍","막을 애"],[7,"艦","싸움배 함;배 함"],[7,"絹","비단 견"],[7,"錦","비단 금"],[7,"綿","솜 면"],[7,"牽","끌 견"],[7,"賜","줄 사"],[7,"浩","넓을 호"],[7,"酷","독할 혹;심할 혹"],[7,"蒸","찔 증"],[7,"焦","탈 초;볶을 초"],[7,"遲","더딜 지;늦을 지"],[7,"誕","낳을 탄"],[7,"衰","쇠약할 쇠"],[7,"衷","정성 충;속 충"],[7,"還","돌아올 환"],[7,"紊","어지러울 문"],[7,"辭","말씀 사"],[7,"刺","찌를 자"],[7,"刹","절 찰"],[7,"鎖","쇠사슬 쇄;자물쇠 쇄;잠글 쇄"],[7,"矢","화살 시"],[7,"疾","병 질"],[7,"癌","암 암"],[7,"酌","술잔 작;따를 작"],[7,"醉","술취할 취"],[7,"醜","추할 추"],[7,"桑","뽕나무 상"],[7,"枚","낱 매;줄기 매"],[7,"鬱","답답할 울;울창할 울"],[7,"遷","옮길 천"],[7,"逮","미칠 체;잡을 체;체포 체"],[7,"衝","부딪칠 충;찌를 충"],[7,"肯","즐길 긍;긍정할 긍"],[7,"獵","사냥 렵"],[7,"獄","옥 옥;옥살이 옥"],[7,"戈","창 과"],[7,"戚","겨레 척;친척 척"],[7,"滅","멸망할 멸;멸할 멸"],[7,"雷","우레 뢰"],[7,"幻","허깨비 환;변할 환"],[7,"乞","빌 걸;구걸 걸"],[7,"傘","우산 산"],[7,"狂","미칠 광"],[7,"弄","희롱할 롱"],[7,"哭","울 곡"],[7,"漏","샐 루"],[7,"洪","넓을 홍"],[7,"漆","옻 칠"],[7,"肅","엄숙할 숙"],[7,"催","재촉할 최;베풀 최"],[7,"傲","거만할 오;오만할 오"],[7,"毁","헐 훼"],[7,"蛇","뱀 사"],[7,"屬","붙을 속;무리 속"],[7,"慧","지혜 혜"],[7,"愈","더욱 유;나을 유"],[7,"護","보호할 호;지킬 호"],[7,"佐","도울 좌"],[7,"趨","달릴 추;달아날 추"],[7,"越","넘을 월"],[7,"煩","번거로울 번"],[7,"頗","자못 파"],[7,"稻","벼 도"],[7,"程","길 정;법 정;경도 정"],[7,"巧","공교할 교;교묘할 교"],[7,"拋","던질 포"],[7,"押","누를 압"],[7,"揷","꽂을 삽"],[7,"誇","자랑할 과"],[7,"豈","어찌 기"],[7,"那","어찌 나"],[7,"奈","어찌 내"],[7,"焉","어조사 언;어찌 언"],[7,"怪","기이할 괴;괴이할 괴"],[7,"兮","어조사 혜"],[7,"耶","어조사 야"],[7,"懼","두려울 구"],[7,"妃","왕비 비;짝 비"],[7,"融","화할 융;녹을 융"],[7,"抄","베낄 초;뽑을 초"],[7,"拔","뺄 발;뽑을 발"],[7,"沙","모래 사"],[7,"穫","거둘 확"],[7,"獲","얻을 획"],[7,"蘇","깨어날 소;되살아날 소"],[7,"蓋","덮을 개"],[7,"荒","거칠 황"],[7,"畢","마칠 필"]];
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  var RANGES = { 1: 'p43–79', 2: 'p79–101', 3: 'p101–119', 4: 'p119–141', 5: 'p141–161', 6: 'p163–183', 7: 'p183–201' };
+  var ALL = DATA.map(function (d) {
+    var alts = d[2].split(';');
+    return { f: d[0], h: d[1], alts: alts, snd: alts[0].split(/\s+/).pop() };
+  });
+  var BYH = {};
+  ALL.forEach(function (e) { BYH[e.h] = e; });
+  var altCount = {};
+  ALL.forEach(function (e) { e.alts.forEach(function (a) { altCount[a] = (altCount[a] || 0) + 1; }); });
+
+  function shuffle(a) {
+    a = a.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  /* 오답 노트 (이 브라우저에만 저장) */
+  var KEY = 'hanja2-wrong-v1';
+  var wrong = {};
+  try {
+    var raw = JSON.parse(localStorage.getItem(KEY) || '[]');
+    if (Array.isArray(raw)) raw.forEach(function (h) { if (BYH[h]) wrong[h] = 1; });
+  } catch (e) {}
+  function saveWrong() { try { localStorage.setItem(KEY, JSON.stringify(Object.keys(wrong))); } catch (e) {} }
+  function wrongCount() { return Object.keys(wrong).length; }
+
+  var cfg = { files: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1 }, dir: 'h2m', count: 20, time: 0, notebook: false };
+  var S = null; // 진행 중인 세션
+
+  var screens = { setup: $('#setup'), play: $('#play'), result: $('#result') };
+  function show(name) {
+    Object.keys(screens).forEach(function (k) { screens[k].hidden = k !== name; });
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- setup ---------- */
+  function getPool() {
+    if (cfg.notebook) return ALL.filter(function (e) { return wrong[e.h]; });
+    return ALL.filter(function (e) { return cfg.files[e.f]; });
+  }
+  function renderSetup() {
+    if (cfg.notebook && wrongCount() === 0) cfg.notebook = false;
+    $('#lede').textContent = '한자를 보고 훈과 음을 맞혀 보세요. 총 ' + ALL.length + '자, 7회분입니다.';
+    $('#files').innerHTML = Object.keys(RANGES).map(function (k) {
+      var n = +k, c = ALL.filter(function (e) { return e.f === n; }).length;
+      var on = !!cfg.files[n] && !cfg.notebook;
+      return '<button type="button" class="chip" data-file="' + n + '" aria-pressed="' + on + '"><b>' + n + '회</b><span>' + RANGES[n] + ' · ' + c + '자</span></button>';
+    }).join('');
+    var allOn = Object.keys(RANGES).every(function (k) { return cfg.files[k]; });
+    $('#toggle-all').textContent = allOn ? '모두 해제' : '모두 선택';
+    var nb = $('#nb');
+    nb.disabled = wrongCount() === 0;
+    nb.setAttribute('aria-pressed', String(cfg.notebook));
+    $('#nb-count').textContent = wrongCount();
+    $('#nb-clear').disabled = wrongCount() === 0;
+    $$('[data-dir]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.dir === cfg.dir)); });
+    $$('[data-count]').forEach(function (b) { b.setAttribute('aria-pressed', String(+b.dataset.count === cfg.count)); });
+    $$('[data-time]').forEach(function (b) { b.setAttribute('aria-pressed', String(+b.dataset.time === cfg.time)); });
+    var pool = getPool();
+    var n2 = cfg.count ? Math.min(cfg.count, pool.length) : pool.length;
+    $('#start').disabled = pool.length === 0;
+    $('#sum').textContent = pool.length ? pool.length + '자 중 ' + n2 + '문제' : '범위를 하나 이상 골라 주세요';
+  }
+
+  $('#setup').addEventListener('click', function (ev) {
+    var t = ev.target.closest('button');
+    if (!t || t.disabled) return;
+    if (t.dataset.file) {
+      var n = +t.dataset.file;
+      if (cfg.notebook) { cfg.notebook = false; cfg.files = {}; cfg.files[n] = 1; }
+      else if (cfg.files[n]) delete cfg.files[n]; else cfg.files[n] = 1;
+    } else if (t.id === 'toggle-all') {
+      var allOn = Object.keys(RANGES).every(function (k) { return cfg.files[k]; });
+      cfg.notebook = false;
+      cfg.files = {};
+      if (!allOn) Object.keys(RANGES).forEach(function (k) { cfg.files[k] = 1; });
+    } else if (t.id === 'nb') {
+      cfg.notebook = !cfg.notebook;
+    } else if (t.id === 'nb-clear') {
+      if (t.dataset.armed) { wrong = {}; saveWrong(); delete t.dataset.armed; t.textContent = '오답 노트 비우기'; }
+      else {
+        t.dataset.armed = '1'; t.textContent = '한 번 더 누르면 비워요';
+        setTimeout(function () { if (t.dataset.armed) { delete t.dataset.armed; t.textContent = '오답 노트 비우기'; } }, 3000);
+        return;
+      }
+    } else if (t.dataset.dir) cfg.dir = t.dataset.dir;
+    else if (t.dataset.count !== undefined) cfg.count = +t.dataset.count;
+    else if (t.dataset.time !== undefined) cfg.time = +t.dataset.time;
+    else if (t.id === 'start') { startSession(getPool(), cfg.count); return; }
+    renderSetup();
+  });
+
+  /* ---------- session ---------- */
+  function startSession(pool, limit) {
+    var qs = shuffle(pool);
+    if (limit) qs = qs.slice(0, limit);
+    S = { qs: qs, i: 0, score: 0, streak: 0, best: 0, bad: [], t0: Date.now(), answered: false, adv: null, dir: cfg.dir, fromNotebook: cfg.notebook, limit: limit };
+    show('play');
+    renderQ();
+  }
+
+  function distractors(t, n, label, banned) {
+    var ok = function (e) { return e !== t && !banned(e); };
+    var same = shuffle(ALL.filter(function (e) { return ok(e) && e.snd === t.snd; }));
+    var inRange = shuffle(ALL.filter(function (e) { return ok(e) && e.snd !== t.snd && (cfg.notebook || cfg.files[e.f]); }));
+    var rest = shuffle(ALL.filter(ok));
+    var out = [], seen = {};
+    seen[label(t)] = 1;
+    function add(e) { var l = label(e); if (out.length < n && !seen[l]) { seen[l] = 1; out.push(e); } }
+    same.slice(0, 2).forEach(add);
+    inRange.forEach(add);
+    rest.forEach(add);
+    return out;
+  }
+
+  function renderQ() {
+    var q = S.qs[S.i];
+    S.answered = false;
+    $('#pn').textContent = S.i + 1;
+    $('#pt').textContent = S.qs.length;
+    $('#ps').textContent = S.score;
+    $('#pbar').style.width = (S.i / S.qs.length * 100) + '%';
+    var st = $('#pstreak');
+    if (S.streak >= 3) { st.hidden = false; st.textContent = S.streak + '연속'; } else st.hidden = true;
+    $('#fb').innerHTML = '';
+    var opts, shown;
+
+    if (S.dir === 'h2m') {
+      var tAlts = {}; q.alts.forEach(function (a) { tAlts[a] = 1; });
+      var ds = distractors(q, 3, function (e) { return e.alts[0]; }, function (e) { return tAlts[e.alts[0]] || e.alts.some(function (a) { return tAlts[a]; }); });
+      opts = shuffle([q].concat(ds));
+      $('#qcard').innerHTML = '<p class="q-label">뜻과 음을 고르세요</p><div class="mi"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"><path d="M50 0V100M0 50H100M0 0L100 100M100 0L0 100" vector-effect="non-scaling-stroke"/></g></svg><span class="g">' + q.h + '</span></div>';
+      $('#opts').className = 'opts';
+      $('#opts').innerHTML = opts.map(function (e, k) {
+        return '<button type="button" class="opt" data-k="' + e.h + '"><kbd>' + (k + 1) + '</kbd>' + e.alts[0] + '</button>';
+      }).join('');
+    } else {
+      var uniq = q.alts.filter(function (a) { return altCount[a] === 1; });
+      var pickFrom = uniq.length ? uniq : q.alts;
+      shown = pickFrom[Math.floor(Math.random() * pickFrom.length)];
+      var ds2 = distractors(q, 3, function (e) { return e.h; }, function (e) { return e.alts.indexOf(shown) >= 0; });
+      opts = shuffle([q].concat(ds2));
+      $('#qcard').innerHTML = '<p class="q-label">이 뜻과 음에 맞는 한자는?</p><div class="mean">' + shown + '</div>';
+      $('#opts').className = 'opts han';
+      $('#opts').innerHTML = opts.map(function (e, k) {
+        return '<button type="button" class="opt" data-k="' + e.h + '"><kbd>' + (k + 1) + '</kbd><span class="hg">' + e.h + '</span></button>';
+      }).join('');
+    }
+    S.cur = q;
+    startTimer();
+  }
+
+  /* timer */
+  var raf = 0, tEnd = 0;
+  function stopTimer() { if (raf) cancelAnimationFrame(raf); raf = 0; }
+  function startTimer() {
+    stopTimer();
+    var wrap = $('#timer'), bar = $('#tbar');
+    if (!cfg.time || !S) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+    bar.classList.remove('low');
+    bar.style.transform = 'scaleX(1)';
+    var total = cfg.time * 1000;
+    tEnd = performance.now() + total;
+    var tick = function () {
+      var left = tEnd - performance.now();
+      var p = Math.max(0, left / total);
+      bar.style.transform = 'scaleX(' + p + ')';
+      bar.classList.toggle('low', p < 0.3);
+      if (left <= 0) { raf = 0; answer(null); } else raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  }
+
+  function answer(key) {
+    if (!S || S.answered) return;
+    S.answered = true;
+    stopTimer();
+    var q = S.cur, ok = key === q.h;
+    $$('.opt').forEach(function (b) {
+      b.disabled = true;
+      if (b.dataset.k === q.h) b.classList.add('is-correct');
+      else if (b.dataset.k === key) b.classList.add('is-wrong');
+      else b.classList.add('dim');
+    });
+    if (ok) {
+      S.score++; S.streak++; if (S.streak > S.best) S.best = S.streak;
+      if (S.fromNotebook && wrong[q.h]) { delete wrong[q.h]; saveWrong(); }
+    } else {
+      S.streak = 0; S.bad.push(q);
+      wrong[q.h] = 1; saveWrong();
+    }
+    $('#ps').textContent = S.score;
+    var last = S.i === S.qs.length - 1;
+    var status = ok ? '<span class="fb-status ok">정답</span>' : '<span class="fb-status no">' + (key === null ? '시간 초과' : '오답') + '</span>';
+    $('#fb').innerHTML = '<div class="fb-text">' + status + '<div class="fb-detail"><span class="g">' + q.h + '</span><span class="m">' + q.alts.join(' · ') + '</span></div></div>' +
+      '<button type="button" class="primary small" id="next">' + (last ? '결과 보기' : '다음') + '</button>';
+    $('#next').focus({ preventScroll: true });
+    if (ok) S.adv = setTimeout(next, 900);
+  }
+
+  function next() {
+    if (!S || !S.answered) return;
+    S.answered = false;
+    clearTimeout(S.adv);
+    if (S.i >= S.qs.length - 1) { finish(); return; }
+    S.i++;
+    renderQ();
+  }
+
+  function fmt(ms) {
+    var s = Math.round(ms / 1000);
+    return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+  }
+
+  function finish() {
+    stopTimer();
+    var n = S.qs.length, pct = Math.round(S.score / n * 100);
+    $('#r-pct').innerHTML = pct + '<small>%</small>';
+    $('#r-frac').textContent = n + '문제 중 ' + S.score + '문제 정답';
+    $('#r-ok').textContent = S.score;
+    $('#r-time').textContent = fmt(Date.now() - S.t0);
+    $('#r-best').textContent = S.best;
+    var box = $('#r-wrong-box');
+    if (S.bad.length) {
+      box.innerHTML = '<p class="label">틀린 한자 ' + S.bad.length + '자</p><div class="wrong-grid">' + S.bad.map(function (e) {
+        return '<div class="w"><span class="g">' + e.h + '</span><span class="m">' + e.alts.join(' · ') + '</span></div>';
+      }).join('') + '</div>';
+    } else {
+      box.innerHTML = '<p class="perfect">모두 맞혔어요. 범위를 넓히거나 제한 시간을 줄여 보세요.</p>';
+    }
+    $('#r-retry-wrong').hidden = S.bad.length === 0;
+    show('result');
+  }
+
+  $('#opts').addEventListener('click', function (ev) {
+    var b = ev.target.closest('.opt');
+    if (b && !b.disabled) answer(b.dataset.k);
+  });
+  $('#fb').addEventListener('click', function (ev) { if (ev.target.closest('#next')) next(); });
+  $('#quit').addEventListener('click', function () {
+    stopTimer(); if (S) clearTimeout(S.adv); S = null; renderSetup(); show('setup');
+  });
+  $('#r-home').addEventListener('click', function () { S = null; renderSetup(); show('setup'); });
+  $('#r-again').addEventListener('click', function () { startSession(S.fromNotebook ? ALL.filter(function (e) { return wrong[e.h]; }) : getPoolFromSession(), S.limit); });
+  function getPoolFromSession() { return cfg.notebook ? getPool() : ALL.filter(function (e) { return cfg.files[e.f]; }); }
+  $('#r-retry-wrong').addEventListener('click', function () { var bad = S.bad.slice(); startSession(bad, 0); });
+
+  document.addEventListener('keydown', function (ev) {
+    if (!S || screens.play.hidden || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (!S.answered && /^[1-4]$/.test(ev.key)) {
+      var b = $$('.opt')[+ev.key - 1];
+      if (b) { ev.preventDefault(); answer(b.dataset.k); }
+    } else if (S.answered && (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'ArrowRight')) {
+      ev.preventDefault(); next();
+    }
+  });
+
+  renderSetup();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+</script>
+
+</body>
+</html>
