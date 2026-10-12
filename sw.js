@@ -1,5 +1,5 @@
 // 오프라인 캐시. 앱 화면은 인터넷이 되면 최신 파일을 먼저 받고, 안 되면 저장해 둔 파일을 쓴다.
-var VERSION = 'hanja-v4b';
+var VERSION = 'hanja-v4c';
 var CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
