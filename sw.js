@@ -1,9 +1,12 @@
 // 오프라인 캐시. 앱 화면은 인터넷이 되면 최신 파일을 먼저 받고, 안 되면 저장해 둔 파일을 쓴다.
-var VERSION = 'hanja-v4c';
+var VERSION = 'hanja-v6';
 var CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(VERSION).then(function (c) { return c.addAll(CORE); }).then(function () { return self.skipWaiting(); }));
+  e.waitUntil(caches.open(VERSION).then(function (c) {
+    // 획순 데이터(큰 파일)는 있으면 미리 받아 두고, 없어도 설치는 계속한다.
+    return c.addAll(CORE).then(function () { return c.add('./strokes.json').catch(function () {}); });
+  }).then(function () { return self.skipWaiting(); }));
 });
 
 self.addEventListener('activate', function (e) {
@@ -30,6 +33,14 @@ self.addEventListener('fetch', function (e) {
         return res;
       }).catch(function () { return caches.match('./index.html'); })
     );
+    return;
+  }
+
+  if (url.pathname.slice(-12) === 'strokes.json') {
+    // 크기가 커서 한 번 받아 두면 계속 쓴다(캐시 우선).
+    e.respondWith(caches.match(req).then(function (hit) {
+      return hit || fetch(req).then(function (res) { if (res && res.ok) { var cp = res.clone(); caches.open(VERSION).then(function (c) { c.put(req, cp); }); } return res; });
+    }));
     return;
   }
 
