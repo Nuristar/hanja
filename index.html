@@ -507,6 +507,38 @@ textarea { width: 100%; min-height: 84px; border: 1.5px solid var(--line); borde
 .qcmp .qc { display: grid; gap: 6px; justify-items: center; }
 .qcmp .qc .hm { width: 104px; } .qcmp .qc .hm svg { width: 104px; height: 104px; }
 .qcmp .qc .ans { width: 104px; height: 104px; display: grid; place-items: center; border: 1.5px solid var(--good); border-radius: 10px; background: var(--good-bg); color: var(--good); font-family: var(--font-han); font-size: 4rem; line-height: 1; }
+.pred { display: grid; gap: 14px; }
+.pred-h { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.pred-big { display: block; font-size: 2.75rem; line-height: 1.05; font-weight: 800; letter-spacing: -.02em; }
+.pred-big.good, .pill.good { color: var(--good); }
+.pred-big.bad, .pill.bad { color: var(--bad); }
+.pred-big.warn, .pill.warn { color: #b7791f; }
+.pill.good { background: var(--good-bg); border-color: transparent; font-weight: 600; }
+.pill.bad { background: var(--bad-bg); border-color: transparent; font-weight: 600; }
+.pill.warn { background: #fff3d6; border-color: transparent; font-weight: 600; }
+@media (prefers-color-scheme: dark) { .pred-big.warn, .pill.warn { color: #f2c46d; } .pill.warn { background: #3d3217; } }
+.pred-bar { position: relative; height: 14px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--line); margin-top: 2px; }
+.pred-bar i { position: absolute; top: 0; bottom: 0; }
+.pred-bar .rng { border-radius: 99px; opacity: .35; background: currentColor; }
+.pred-bar .rng.good { color: var(--good); } .pred-bar .rng.bad { color: var(--bad); } .pred-bar .rng.warn { color: #d99a2b; }
+.pred-bar .dot { width: 14px; height: 14px; margin: -1px 0 0 -7px; border-radius: 50%; background: var(--accent); border: 2px solid var(--surface); top: 0; bottom: auto; box-shadow: 0 0 0 1px var(--accent); }
+.pred-bar .line { width: 2px; top: -5px; bottom: -5px; background: var(--ink); margin-left: -1px; border-radius: 2px; }
+.pred-ax { position: relative; display: flex; justify-content: space-between; height: 16px; font-size: .75rem; color: var(--ink-3); margin-top: -6px; }
+.pred-ax span:nth-child(2) { position: absolute; transform: translateX(-50%); color: var(--ink-2); font-weight: 600; white-space: nowrap; }
+.pred-rows { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.pred-rows > div, .pred-weak > div { display: flex; justify-content: space-between; gap: 10px; font-size: .875rem; }
+.pred-rows span, .pred-weak span:first-child { color: var(--ink-2); }
+.pred-weak { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.pred-weak > b { font-size: .875rem; }
+.pred-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.coach { display: grid; gap: 4px; }
+.coach-row { display: grid; gap: 6px; padding: 12px 0; border-top: 1px solid var(--line); }
+.coach-row:first-of-type { border-top: 0; }
+.coach-h { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.coach-row p { margin: 0; font-size: .875rem; line-height: 1.5; color: var(--ink-2); }
+.coach-b { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.btn.sm { padding: 8px 14px; font-size: .875rem; min-height: 0; width: auto; border-radius: 10px; }
 </style>
 </head>
 <body>
@@ -867,6 +899,7 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
       '<div class="goal-text"><b>' + (done ? '오늘 문제 목표를 채웠어요' : '오늘 풀 문제 ' + goal + '개') + '</b><div class="streak-line"><span>연속 <strong class="num">' + sk.cur + '일</strong></span><span>최장 <strong class="num">' + sk.best + '일</strong></span><span>정답 <strong class="num">' + L.c + '</strong></span></div>' +
       '<span class="muted">' + (done ? '더 풀어도 기록이 쌓여요.' : (goal - L.q) + '문제 남았어요.') + '</span></div></div>' +
       examCard() +
+      predCard(true) +
       '<button type="button" class="card homeex" data-act="goExamPool"><span><b>기출 출제 모아보기</b><br><span class="muted">한자 ' + exPool('h').length + ' · 단어 ' + exPool('w').length + ' · 사자성어 ' + exPool('i').length + ' · 기출에 나온 것만</span></span><span class="go">보기 ›</span></button>' +
       '<div class="group"><h2 class="sec">바로 시작</h2><div class="tiles">' +
       tile('startDue', '복습', due, '개', '복습할 때가 된 항목', !due) +
@@ -909,7 +942,7 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
     return '<div class="page">' + top +
       catSeg(cat, 'cCat') +
       '<p class="lede">카드를 넘기며 ' + (cat === 'h' ? '훈과 음' : cat === 'w' ? '독음과 뜻' : '독음과 뜻풀이') + '을 외우고, 알았는지 스스로 표시하세요. 표시한 결과는 복습 일정에 반영돼요.</p>' +
-      (c.kind === 'exam' ? '<p class="lede" style="margin:0">기출 9회(제114~122회)에 나온 ' + UNIT[cat].trim() + '만 모았어요. 많이 나온 순서예요. 기존 교재에 없던 항목은 \'기출 추가\'로 표시돼요.</p>' : '') +
+      (c.kind === 'exam' ? '<p class="lede" style="margin:0">기출 ' + EXAMS.length + '회(제' + EXAMS[EXAMS.length - 1].no + '~' + EXAMS[0].no + '회)에 나온 ' + UNIT[cat].trim() + '만 모았어요. 많이 나온 순서예요. 기존 교재에 없던 항목은 \'기출 추가\'로 표시돼요.</p>' : '') +
       (c.kind === 'exam' ? '' : '<div class="group"><div class="sec-row"><h2 class="sec">범위</h2><button class="link" type="button" data-act="cAll">' + (pickedCount(c.fl[cat]) === GROUPS[cat].length ? '모두 해제' : '모두 선택') + '</button></div>' + fileChips(cat, c.fl[cat], 'cFile') + '</div>') +
       '<div class="group"><h2 class="sec">대상</h2>' + seg(kinds, c.kind, 'cKind') + '</div>' +
       '<div class="group"><h2 class="sec">앞면</h2>' + seg([['main', fl[0]], ['hint', fl[1]]], c.face, 'cFace') + '</div>' +
@@ -1057,7 +1090,7 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
       var l = LIST[c[0]], cc = levelCounts(l);
       return '<div class="group" style="gap:6px"><div class="sec-row"><h2 class="sec">' + c[1] + '</h2><span class="muted num">익힘 ' + (cc[2] + cc[3]) + ' / ' + l.length + UNIT[c[0]] + '</span></div>' + stackBar(cc, true) + '</div>';
     }).join('');
-    return '<div class="page">' +
+    return '<div class="page">' + predCard(false) + coachCard() +
       '<div class="kpis"><div class="kpi"><span>누적 푼 문제</span><b class="num">' + totQ.toLocaleString() + '</b></div>' +
       '<div class="kpi"><span>누적 정답률</span><b class="num">' + (totQ ? Math.round(totC / totQ * 100) + '%' : '-') + '</b></div>' +
       '<div class="kpi"><span>연속 학습</span><b class="num">' + sk.cur + '일</b><small>최장 ' + sk.best + '일</small></div>' +
@@ -1140,7 +1173,7 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
       '<div class="set-grp"><h4>기록 백업</h4><p>기록은 이 기기에만 저장돼요. 기기를 바꿀 때 복사해서 옮기세요.</p>' +
       '<div class="pair"><button class="btn sec sm" type="button" data-act="exportData" style="width:100%">기록 복사</button><button class="btn sec sm" type="button" data-act="importOpen" style="width:100%">기록 복원</button></div><div id="bk"></div></div>' +
       '<div class="set-grp"><h4>기록 초기화</h4><p>학습 기록, 오답 노트, 즐겨찾기가 모두 지워져요.</p><button class="btn bad sm" type="button" data-act="resetAsk" style="width:100%">' + (UI.resetArmed ? '정말 지울까요? 한 번 더 누르세요' : '모든 기록 지우기') + '</button></div>' +
-      '<div class="set-grp"><p>한자 ' + HJ.length + '자 · 단어 ' + WD.length + '개 · 사자성어 ' + ID.length + '개 · 진흥회 한자 2급 대비 · 버전 9</p><p class="muted" style="font-size:.75rem;line-height:1.5">획순 데이터: Make Me a Hanzi(Arphic Public License), KanjiVG(CC BY-SA 3.0, Ulrich Apel 외). 쓰기 엔진: Hanzi Writer(MIT).</p></div>');
+      '<div class="set-grp"><p>한자 ' + HJ.length + '자 · 단어 ' + WD.length + '개 · 사자성어 ' + ID.length + '개 · 진흥회 한자 2급 대비 · 버전 11</p><p class="muted" style="font-size:.75rem;line-height:1.5">획순 데이터: Make Me a Hanzi(Arphic Public License), KanjiVG(CC BY-SA 3.0, Ulrich Apel 외). 쓰기 엔진: Hanzi Writer(MIT).</p></div>');
   }
 
   /* ---------- 렌더 ---------- */
@@ -1477,7 +1510,8 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
     stopLoop(); E.done = true; E.grading = null; E.elapsed = E.elapsed || Math.min(Date.now() - E.t0, E.limit || Infinity);
     var ok = 0; E.qs.forEach(function (q, i) { var g = E.ans[i].ok === true; if (g) ok++; if (!E.ans[i].mm) exMarkMiss(q, g); });
     E.score = ok * EX_PT; E.total = E.qs.length * EX_PT;
-    ST.ex.hist = (ST.ex.hist || []).concat([{ t: Date.now(), mode: E.mode, exam: E.o.exam, sc: E.score, tot: E.total, n: E.qs.length, sec: Math.round(E.elapsed / 1000) }]).slice(-60);
+    var ty = {}; E.qs.forEach(function (q, i) { var r = ty[q.t] = ty[q.t] || [0, 0]; r[1]++; if (E.ans[i].ok === true) r[0]++; });
+    ST.ex.hist = (ST.ex.hist || []).concat([{ t: Date.now(), mode: E.mode, exam: E.o.exam, sc: E.score, tot: E.total, n: E.qs.length, sec: Math.round(E.elapsed / 1000), ty: ty }]).slice(-60);
     save(); render();
   }
   function exGradeRender() {
@@ -1529,7 +1563,146 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
     sheetOpen('<div class="grab"></div><div class="sheet-h"><h3>문제 목록</h3><button class="iconbtn" type="button" data-act="closeSheet" aria-label="닫기">' + icon(IC.close) + '</button></div>' +
       '<div class="qgrid big">' + cells + '</div><p class="muted" style="margin:12px 0">답하지 않은 문제 <b class="num">' + un + '</b>개</p><button class="btn" type="button" data-act="exSubmit">제출하고 채점하기</button>');
   }
+  /* ---------- 합격 예측 ---------- */
+  var P_LVL = [0.2, 0.5, 0.8, 0.95];
+  function erf(x) { var t = 1 / (1 + 0.3275911 * Math.abs(x)), y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; }
+  function normCdf(z) { return 0.5 * (1 + erf(z / Math.SQRT2)); }
+  function predict() {
+    var hist = ST.ex.hist || [], full = hist.filter(function (r) { return r.mode === 'full' && r.tot; });
+    var nF = full.length, rec = full.slice(-4).reverse();
+    /* 지식 점수: 기출에 나온 항목을 많이 나온 순으로 가중해 익힘 정도를 계산 */
+    var sw = 0, sk = 0, touched = 0, mast = 0, tot = 0;
+    CATS.forEach(function (c) { exPool(c[0]).forEach(function (e) {
+      var L = lvl(e.k), w = e.ex; sw += w; sk += w * P_LVL[L]; tot++; if (L > 0) touched++; if (L >= 2) mast++;
+    }); });
+    var K = sw ? sk / sw : 0, SK = K * 0.93;
+    /* 유형별 정답률(최근 기록일수록, 시험 모드일수록 가중) — 지식 점수를 사전값으로 */
+    var F = null; if (nF) { var ws = 0, fs = 0; rec.forEach(function (r, i) { var w = [1, 0.75, 0.55, 0.4][i]; ws += w; fs += w * r.sc / r.tot; }); F = fs / ws; }
+    var trend = null; if (nF >= 2) { var f4 = full.slice(-4); trend = (f4[f4.length - 1].sc - f4[0].sc) / (f4.length - 1); }
+    if (F !== null && trend !== null) F = Math.max(0.02, Math.min(0.99, F + Math.max(-0.03, Math.min(0.05, trend / 200 * 0.5))));
+    var acc = {}, N = {}, hasTy = false;
+    var tyRecs = hist.filter(function (r) { return r.ty && r.mode !== 'miss'; }).slice(-12).reverse();
+    tyRecs.forEach(function (r, i) {
+      var w = Math.pow(0.88, i) * (r.mode === 'full' ? 1 : 0.6);
+      Object.keys(r.ty).forEach(function (t) { var a = acc[t] = acc[t] || { ok: 0, n: 0, raw: 0 }; a.ok += w * r.ty[t][0]; a.n += w * r.ty[t][1]; a.raw += r.ty[t][1]; hasTy = true; });
+    });
+    var totQ = EXAMS.length * 100, T = 0, types = [];
+    TYPE_ORDER.forEach(function (t) {
+      var share = (QCOUNT[t] || 0) / totQ, a = acc[t] || { ok: 0, n: 0, raw: 0 };
+      var prior = F !== null ? 0.5 * F + 0.5 * SK : Math.min(0.95, SK + 0.05), est = (a.ok + 4 * prior) / (a.n + 4);
+      T += share * est; types.push({ t: t, name: TI[t][0], share: share, est: est, raw: a.raw, obs: a.n ? a.ok / a.n : null });
+    });
+    if (!hasTy) T = SK;
+    /* 연습 정답률(4지선다라 후하게 나오므로 할인) */
+    var q14 = 0, c14 = 0; lastDays(14).forEach(function (d) { q14 += d.q; c14 += d.c; });
+    var SP = q14 >= 40 ? (c14 / q14) * 0.85 : null;
+    var base = SP === null ? T : 0.85 * T + 0.15 * SP;
+    var wF = [0, 0.6, 0.75, 0.85, 0.9][Math.min(nF, 4)];
+    var m = F === null ? base : wF * F + (1 - wF) * base;
+    m = Math.max(0.02, Math.min(0.99, m));
+    var unc = [0.12, 0.09, 0.07, 0.055, 0.045][Math.min(nF, 4)], sd = Math.sqrt(0.045 * 0.045 + unc * unc);
+    var prob = Math.max(0.01, Math.min(0.99, normCdf((m - EX_PASS) / sd)));
+    var weak = types.filter(function (x) { return x.raw >= 3; }).sort(function (a, b) { return a.obs - b.obs; }).slice(0, 3).map(function (x) {
+      return { name: x.name, t: x.t, acc: x.obs, gain: Math.max(0, Math.round(x.share * totQ / EXAMS.length * 2 * (0.9 - x.obs))) };
+    }).filter(function (x) { return x.acc < 0.85; });
+    return { ready: nF > 0 || touched >= 20, nF: nF, m: m, score: Math.round(m * 200), lo: Math.round(Math.max(0, m - sd) * 200), hi: Math.round(Math.min(1, m + sd) * 200),
+      prob: prob, conf: nF >= 3 ? '높음' : nF >= 2 ? '보통' : '낮음', K: K, F: F, SP: SP, trend: trend, weak: weak, touched: touched, mast: mast, tot: tot, hasTy: hasTy, last: full.length ? full[full.length - 1] : null };
+  }
+  function predVerdict(p) {
+    var pc = Math.round(p.prob * 100);
+    if (pc >= 85) return ['합격 유력', 'good']; if (pc >= 60) return ['합격권', 'good']; if (pc >= 30) return ['합격선 근처', 'warn']; if (pc >= 10) return ['조금 더 필요해요', 'bad']; return ['아직 많이 필요해요', 'bad'];
+  }
+  function predCard(compact) {
+    var p = predict(), pass = Math.round(200 * EX_PASS);
+    if (!p.ready) {
+      return '<div class="group"><h2 class="sec">합격 예측</h2><div class="card pred"><p class="muted" style="margin:0">아직 데이터가 부족해요. 기출 시험 모드를 1회 풀거나 학습을 조금 더 하면 예측이 나와요.</p>' +
+        '<button class="btn" type="button" data-act="goExam">기출문제 풀러 가기</button></div></div>';
+    }
+    var v = predVerdict(p), pc = Math.round(p.prob * 100), diff = p.score - pass;
+    var pos = function (x) { return Math.max(0, Math.min(100, x / 2)).toFixed(1); };
+    var bar = '<div class="pred-bar" role="img" aria-label="예상 ' + p.score + '점, 합격선 ' + pass + '점"><i class="rng ' + v[1] + '" style="left:' + pos(p.lo) + '%;width:' + (pos(p.hi) - pos(p.lo)).toFixed(1) + '%"></i><i class="dot ' + v[1] + '" style="left:' + pos(p.score) + '%"></i><i class="line" style="left:' + pos(pass) + '%"></i></div>' +
+      '<div class="pred-ax"><span>0</span><span style="left:' + pos(pass) + '%">합격선 ' + pass + '</span><span>200</span></div>';
+    var head = '<div class="pred-h"><div><span class="muted">합격 가능성</span><b class="pred-big num ' + v[1] + '">' + pc + '%</b></div><div style="text-align:right"><span class="pill ' + v[1] + '">' + v[0] + '</span><div class="muted num" style="margin-top:6px">예상 ' + p.score + '점 <small>(' + p.lo + '~' + p.hi + ')</small></div></div></div>';
+    var msg = diff >= 0 ? '합격선보다 약 ' + diff + '점 여유가 있어요.' : '합격선까지 약 ' + (-diff) + '점 더 올려야 해요.';
+    if (compact) return '<button type="button" class="card homeex" data-act="goStats"><span><b>합격 예측 ' + pc + '%</b><br><span class="muted">예상 ' + p.score + '점 · ' + v[0] + '</span></span><span class="go">자세히 ›</span></button>';
+    var rows = '<div class="pred-rows">' +
+      '<div><span>기출 시험 모드</span><b class="num">' + (p.F === null ? '기록 없음' : Math.round(p.F * 200) + '점 (최근 ' + Math.min(p.nF, 4) + '회 반영)') + '</b></div>' +
+      '<div><span>기출 항목 익힘</span><b class="num">' + p.mast + ' / ' + p.tot + '개 (' + Math.round(p.mast / p.tot * 100) + '%)</b></div>' +
+      '<div><span>자주 나온 항목 숙련도</span><b class="num">' + Math.round(p.K * 100) + '%</b></div>' +
+      '<div><span>최근 2주 연습 정답률</span><b class="num">' + (p.SP === null ? '자료 부족' : Math.round(p.SP / 0.85 * 100) + '%') + '</b></div>' +
+      (p.trend === null ? '' : '<div><span>시험 점수 추세</span><b class="num">' + (Math.abs(p.trend) < 3 ? '비슷해요' : p.trend > 0 ? '회당 +' + Math.round(p.trend) + '점 상승' : '회당 ' + Math.round(p.trend) + '점 하락') + '</b></div>') +
+      '</div>';
+    var weak = p.weak.length ? '<div class="pred-weak"><b>점수를 올릴 곳</b>' + p.weak.map(function (w) { return '<div><span>' + w.name + '</span><span class="num">정답률 ' + Math.round(w.acc * 100) + '%' + (w.gain ? ' · 최대 +' + w.gain + '점' : '') + '</span></div>'; }).join('') + '</div>' : '<p class="muted" style="margin:0;font-size:.8125rem">유형별 약점은 기출 시험 모드를 풀면 분석돼요.</p>';
+    return '<div class="group"><h2 class="sec">합격 예측</h2><div class="card pred">' + head + bar + '<p style="margin:0">' + msg + '</p>' + rows + weak +
+      '<div class="pred-btns"><button class="btn" type="button" data-act="goExam">기출 시험 풀기</button><button class="btn sec" type="button" data-act="predStudy">기출 출제 항목 학습</button></div>' +
+      '<p class="muted" style="margin:0;font-size:.75rem;line-height:1.5">신뢰도 ' + p.conf + (p.nF < 3 ? ' · 시험 모드를 ' + (3 - p.nF) + '회 더 풀면 더 정확해져요' : '') + '. 시험 기록과 학습 진도를 바탕으로 한 추정치이며, 실제 시험의 난이도에 따라 달라질 수 있어요.</p></div></div>';
+  }
+
+  /* ---------- 약점 개선 플랜 ---------- */
+  var COACH = {
+    same: ['h', 'cards', '한자의 음을 정확히 외우면 바로 점수가 돼요. 같은 음의 한자를 묶어서 비교해 보세요.'],
+    syn: ['h', 'cards', '한자의 훈(뜻)을 외워야 비슷한 뜻을 찾을 수 있어요. 카드 앞면을 한자로 두고 훈음을 떠올려 보세요.'],
+    ant: ['h', 'cards', '반대되는 한자는 짝으로 나와요. 훈을 정확히 알면 쉬워져요.'],
+    rel: ['h', 'cards', '보기 단어의 공통 뜻을 찾는 문제예요. 한자 훈을 넓게 알수록 유리해요.'],
+    bad: ['w', 'cards', '독음이 헷갈리는 단어를 카드로 반복하세요. 두음법칙·된소리 독음을 특히 조심하세요.'],
+    hanja: ['w', 'write', '한자 모양을 구분하는 문제예요. 단어를 직접 써 보면 비슷한 글자가 구분돼요.'],
+    mean: ['w', 'cards', '단어의 뜻을 한자 하나하나의 훈으로 풀어서 이해해 보세요.'],
+    blank: ['w', 'cards', '문맥에 맞는 단어를 고르는 문제예요. 단어의 뜻을 문장으로 떠올려 보세요.'],
+    hun: ['h', 'cards', '훈음 쓰기는 한자 카드로 훈과 음을 소리 내어 반복하는 게 가장 빨라요.'],
+    from: ['h', 'cards', '훈음에서 한자를 떠올리는 연습이 필요해요. 퀴즈에서 훈음→한자 방향으로도 풀어 보세요.'],
+    read: ['w', 'cards', '단어 독음 카드를 반복하세요. 자주 나온 단어부터 외우면 효율이 좋아요.'],
+    common: ['h', 'cards', '공통으로 들어가는 한자를 찾는 문제예요. 한자의 뜻을 폭넓게 알아야 해서 한자 카드가 도움돼요.'],
+    pick2: ['h', 'cards', '보기에서 고르는 문제라 한자를 알아보기만 하면 돼요. 한자 카드로 모양과 훈을 익히세요.'],
+    fix: ['w', 'write', '음이 같은 한자를 구분해야 해요. 헷갈리는 단어를 직접 써 보세요.'],
+    sread: ['w', 'cards', '문장 속 단어 독음이에요. 단어 카드로 독음을 반복하세요.'],
+    write: ['w', 'write', '한자어 쓰기는 따라쓰기로 획순과 모양을 손에 익히는 게 가장 효과적이에요.'],
+    idiom: ['i', 'cards', '사자성어는 뜻풀이와 함께 외우세요. 기출에 나온 사자성어는 다시 나오는 경우가 많아요.']
+  };
+  function gapList(cat, minEx) {
+    var all = exPool(cat).filter(function (e) { return lvl(e.k) < 2; });
+    var hi = all.filter(function (e) { return e.ex >= (minEx || 2); });
+    return hi.length >= 5 ? hi : all;
+  }
+  function coachCard() {
+    var p = predict(), steps = [], i;
+    if (p.weak.length) p.weak.forEach(function (w) {
+      var c = COACH[w.t];
+      steps.push({ title: w.name, meta: '정답률 ' + Math.round(w.acc * 100) + '%' + (w.gain ? ' · 최대 +' + w.gain + '점' : ''), tip: c[2],
+        b: [['coachType', w.t, '문제 풀기'], [c[1] === 'write' ? 'coachWrite' : 'coachCards', c[0], c[1] === 'write' ? '따라쓰기' : '카드 학습']] });
+    });
+    var mc = exMissList().length;
+    var gaps = CATS.map(function (c) { return { cat: c[0], name: c[1], n: gapList(c[0]).length, hi: exPool(c[0]).filter(function (e) { return lvl(e.k) < 2 && e.ex >= 2; }).length }; }).filter(function (g) { return g.n; });
+    gaps.sort(function (a, b) { return b.hi - a.hi || b.n - a.n; });
+    gaps.slice(0, 2).forEach(function (g) {
+      steps.push({ title: '자주 나왔는데 아직 못 외운 ' + g.name, meta: g.hi ? '출제 2회 이상 ' + g.hi + UNIT[g.cat] : g.n + UNIT[g.cat], tip: '기출에서 많이 나온 순으로 10개씩 카드로 외워요. 외운 항목은 다음 예측에 반영돼요.', b: [['coachCards', g.cat, '10개 학습']] });
+    });
+    if (mc) steps.push({ title: '기출에서 틀린 문제', meta: mc + '문제', tip: '틀린 문제는 같은 유형으로 다시 나와요. 해설을 읽으면서 하나씩 지워 보세요.', b: [['coachMiss', '', '오답 다시 풀기']] });
+    if (p.nF < 3) steps.push({ title: '시험 모드로 실력 점검', meta: '지금 ' + p.nF + '회', tip: '시험 모드 기록이 쌓일수록 예측과 약점 분석이 정확해져요. 60분 타이머로 한 회를 풀어 보세요.', b: [['goExam', '', '시험 풀기']] });
+    if (!steps.length) return '';
+    var rows = steps.slice(0, 6).map(function (st, n) {
+      return '<div class="coach-row"><div class="coach-h"><b>' + (n + 1) + '. ' + st.title + '</b><span class="muted num">' + st.meta + '</span></div><p>' + st.tip + '</p><div class="coach-b">' +
+        st.b.map(function (b, k) { return '<button type="button" class="btn ' + (k ? 'sec' : '') + ' sm" data-act="' + b[0] + '"' + (b[1] ? ' data-arg="' + b[1] + '"' : '') + '>' + b[2] + '</button>'; }).join('') + '</div></div>';
+    }).join('');
+    var lead = p.score >= 200 * EX_PASS + 10 ? '지금 흐름을 유지하면서 약한 곳만 다듬으면 돼요.' : p.score >= 200 * EX_PASS ? '합격선 근처예요. 아래 순서대로 약점을 줄이면 안정권에 들어가요.' : '아래 순서대로 하면 점수를 가장 빨리 올릴 수 있어요.';
+    return '<div class="group"><h2 class="sec">약점 개선 플랜</h2><div class="card coach"><p class="muted" style="margin:0">' + lead + (p.hasTy ? '' : ' (시험 모드를 한 번 풀면 유형별 약점이 더 정확해져요.)') + '</p>' + rows + '</div></div>';
+  }
+  function coachStudy(cat, how) {
+    var run = function () {
+      var l = gapList(cat).slice(0, 10);
+      if (!l.length) l = exPool(cat).slice(0, 10);
+      if (how === 'write') startWrite(l.slice(0, 5), { stage: 'trace', order: 'seq', count: 5 }, run);
+      else startCards(l, { face: 'main', order: 'seq', count: 10 }, run);
+    };
+    run();
+  }
+
   var EXACT = {
+    coachType: function (t) { var u = EXUI; u.mode = 'practice'; u.types = {}; u.types[t] = 1; EXAMS.forEach(function (x) { u.sel[x.id] = 1; }); u.count = 10; u.instant = 1; u.order = 'rand'; exStart(); },
+    coachMiss: function () { var u = EXUI; u.mode = 'miss'; u.types = {}; u.count = 20; u.instant = 1; u.order = 'rand'; exStart(); },
+    coachCards: function (cat) { coachStudy(cat, 'cards'); },
+    coachWrite: function (cat) { coachStudy(cat, 'write'); },
+    predStudy: function () { UI.c.cat = 'h'; UI.c.kind = 'exam'; UI.lTop = 'cards'; go('learn'); },
+    goStats: function () { go('stats'); },
     exTop: function (a) { EXUI.top = a; render(true); },
     exMode: function (a) { EXUI.mode = a; render(true); },
     exPick: function (a) { EXUI.exam = a; render(true); },
