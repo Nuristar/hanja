@@ -539,6 +539,11 @@ textarea { width: 100%; min-height: 84px; border: 1.5px solid var(--line); borde
 .coach-row p { margin: 0; font-size: .875rem; line-height: 1.5; color: var(--ink-2); }
 .coach-b { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
 .btn.sm { padding: 8px 14px; font-size: .875rem; min-height: 0; width: auto; border-radius: 10px; }
+
+.trk { display: grid; gap: 8px; }
+.trk.now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.trk-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.trk-f { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 </style>
 </head>
 <body>
@@ -911,6 +916,7 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
       '<span class="muted">' + (done ? '더 풀어도 기록이 쌓여요.' : (goal - L.q) + '문제 남았어요.') + '</span></div></div>' +
       examCard() +
       predCard(true) +
+      trackCard() +
       '<button type="button" class="card homeex" data-act="goExamPool"><span><b>기출 출제 모아보기</b><br><span class="muted">한자 ' + exPool('h').length + ' · 단어 ' + exPool('w').length + ' · 사자성어 ' + exPool('i').length + ' · 기출에 나온 것만</span></span><span class="go">보기 ›</span></button>' +
       '<div class="group"><h2 class="sec">바로 시작</h2><div class="tiles">' +
       tile('startDue', '복습', due, '개', '복습할 때가 된 항목', !due) +
@@ -1184,14 +1190,14 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
       '<div class="set-grp"><h4>기록 백업</h4><p>기록은 이 기기에만 저장돼요. 기기를 바꿀 때 복사해서 옮기세요.</p>' +
       '<div class="pair"><button class="btn sec sm" type="button" data-act="exportData" style="width:100%">기록 복사</button><button class="btn sec sm" type="button" data-act="importOpen" style="width:100%">기록 복원</button></div><div id="bk"></div></div>' +
       '<div class="set-grp"><h4>기록 초기화</h4><p>학습 기록, 오답 노트, 즐겨찾기가 모두 지워져요.</p><button class="btn bad sm" type="button" data-act="resetAsk" style="width:100%">' + (UI.resetArmed ? '정말 지울까요? 한 번 더 누르세요' : '모든 기록 지우기') + '</button></div>' +
-      '<div class="set-grp"><p>한자 ' + HJ.length + '자 · 단어 ' + WD.length + '개 · 사자성어 ' + ID.length + '개 · 진흥회 한자 2급 대비 · 버전 14</p><p class="muted" style="font-size:.75rem;line-height:1.5">획순 데이터: Make Me a Hanzi(Arphic Public License), KanjiVG(CC BY-SA 3.0, Ulrich Apel 외). 쓰기 엔진: Hanzi Writer(MIT).</p></div>');
+      '<div class="set-grp"><p>한자 ' + HJ.length + '자 · 단어 ' + WD.length + '개 · 사자성어 ' + ID.length + '개 · 진흥회 한자 2급 대비 · 버전 15</p><p class="muted" style="font-size:.75rem;line-height:1.5">획순 데이터: Make Me a Hanzi(Arphic Public License), KanjiVG(CC BY-SA 3.0, Ulrich Apel 외). 쓰기 엔진: Hanzi Writer(MIT).</p></div>');
   }
 
   /* ---------- 렌더 ---------- */
-  var VIEWS = { home: vHome, learn: vLearn, quiz: vQuiz, dict: vDict, stats: vStats };
+  var VIEWS = { home: vHome, learn: vLearn, quiz: vQuiz, dict: vDict, stats: vStats, track: vTrack };
   function renderTop() {
     var t = $('#top');
-    t.innerHTML = (UI.tab === 'home' ? '<div class="brand"><span class="seal" aria-hidden="true">漢</span><h1>한자 2급</h1></div>' : '<h1>' + { learn: '암기 카드', quiz: '퀴즈', dict: '사전', stats: '학습 기록' }[UI.tab] + '</h1>') +
+    t.innerHTML = (UI.tab === 'home' ? '<div class="brand"><span class="seal" aria-hidden="true">漢</span><h1>한자 2급</h1></div>' : '<h1>' + { learn: '암기 카드', quiz: '퀴즈', dict: '사전', stats: '학습 기록', track: '속성 코스' }[UI.tab] + '</h1>') +
       '<button class="iconbtn" type="button" data-act="settings" aria-label="설정">' + icon(IC.gear) + '</button>';
   }
   function render(keepScroll) {
@@ -1237,7 +1243,7 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
   });
   var QCOUNT = {};
   EXAMS.forEach(function (x) { x.q.forEach(function (q) { QCOUNT[q.t] = (QCOUNT[q.t] || 0) + 1; }); });
-  function qLabel(q) { return q.n <= 30 ? q.n + '번' : '주' + (q.n - 100) + '번'; }
+  function qLabel(q) { return q.gen ? '예상 문제' : q.n <= 30 ? q.n + '번' : '주' + (q.n - 100) + '번'; }
   function exDate(d) { var p = d.split('-'); return p[0] + '.' + p[1] + '.' + p[2]; }
   function exStat(id) {
     var h = (ST.ex.hist || []).filter(function (r) { return r.mode === 'full' && r.exam === id; });
@@ -1377,7 +1383,7 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
       '<div class="stack"><button class="btn" id="startbtn" type="button" data-act="exStart"' + (sm.ok ? '' : ' disabled') + '>' + (u.mode === 'full' ? '시험 시작' : '시작하기') + '</button><p class="sum num" id="sum">' + sm.text + '</p></div>' +
       (hist.length ? '<div class="group"><h2 class="sec">최근 기록</h2><div class="mlist">' + hist.map(function (r) {
         var d = new Date(r.t), pc = Math.round(r.sc / r.tot * 100);
-        return '<div class="mitem" style="grid-template-columns:1fr auto"><span class="m">' + (d.getMonth() + 1) + '/' + d.getDate() + ' · ' + (r.mode === 'full' ? '제' + r.exam + '회 전체' : r.mode === 'miss' ? '기출 오답' : '유형별 ' + r.n + '문항') + '</span><span class="num" style="font-weight:700;color:' + (r.mode === 'full' ? (r.sc >= r.tot * EX_PASS ? 'var(--good)' : 'var(--bad)') : 'var(--ink)') + '">' + r.sc + ' / ' + r.tot + ' (' + pc + '%)</span></div>';
+        return '<div class="mitem" style="grid-template-columns:1fr auto"><span class="m">' + (d.getMonth() + 1) + '/' + d.getDate() + ' · ' + (r.mode === 'full' ? '제' + r.exam + '회 전체' : r.mode === 'miss' ? '기출 오답' : r.mode === 'track' ? '속성 코스 ' + r.n + '문항' : '유형별 ' + r.n + '문항') + '</span><span class="num" style="font-weight:700;color:' + (r.mode === 'full' ? (r.sc >= r.tot * EX_PASS ? 'var(--good)' : 'var(--bad)') : 'var(--ink)') + '">' + r.sc + ' / ' + r.tot + ' (' + pc + '%)</span></div>';
       }).join('') + '</div></div>' : '') + '</div>';
   }
 
@@ -1489,6 +1495,7 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
     E.i = ni; exRender(); $('#view').scrollTop = 0;
   }
   function exMarkMiss(q, ok) {
+    if (q.gen) { var it = BYK[q._k]; if (it) rec(it, ok); return; }
     var m = ST.ex.miss[q.id];
     if (ok) { if (m) delete ST.ex.miss[q.id]; }
     else { if (!m) m = ST.ex.miss[q.id] = { w: 0, t: 0 }; m.w++; m.t = Date.now(); }
@@ -1521,8 +1528,9 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
     stopLoop(); E.done = true; E.grading = null; E.elapsed = E.elapsed || Math.min(Date.now() - E.t0, E.limit || Infinity);
     var ok = 0; E.qs.forEach(function (q, i) { var g = E.ans[i].ok === true; if (g) ok++; if (!E.ans[i].mm) exMarkMiss(q, g); });
     E.score = ok * EX_PT; E.total = E.qs.length * EX_PT;
+    if (E.mode === 'track') trackRecord(E.o.track, ok, E.qs.length);
     var ty = {}; E.qs.forEach(function (q, i) { var r = ty[q.t] = ty[q.t] || [0, 0]; r[1]++; if (E.ans[i].ok === true) r[0]++; });
-    ST.ex.hist = (ST.ex.hist || []).concat([{ t: Date.now(), mode: E.mode, exam: E.o.exam, sc: E.score, tot: E.total, n: E.qs.length, sec: Math.round(E.elapsed / 1000), ty: ty }]).slice(-60);
+    ST.ex.hist = (ST.ex.hist || []).concat([{ t: Date.now(), mode: E.mode, exam: E.o.exam, sc: E.score, tot: E.total, n: E.qs.length, sec: Math.round(E.elapsed / 1000), ty: ty }]); while (ST.ex.hist.length > 80) { var di = -1; ST.ex.hist.some(function (r, ix) { if (r.mode === 'track') { di = ix; return true; } return false; }); ST.ex.hist.splice(di >= 0 ? di : 0, 1); }
     save(); render();
   }
   function exGradeRender() {
@@ -1542,14 +1550,14 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
       var b = byT[t], p = Math.round(b.c / b.n * 100);
       return '<div class="mrow" style="padding:6px 0"><div class="mrow-h"><b>' + TI[t][0] + '</b><span class="num">' + b.c + ' / ' + b.n + ' · ' + p + '%</span></div><div class="stackbar"><i class="m3" style="flex:' + b.c + ' 1 0' + (b.c ? '' : ';display:none') + '"></i><i class="m0" style="flex:' + (b.n - b.c) + ' 1 0' + (b.n - b.c ? '' : ';display:none') + '"></i></div></div>';
     }).join('');
-    var grid = '<div class="qgrid">' + E.qs.map(function (q, k) { return '<button type="button" class="qg ' + (E.ans[k].ok === true ? 'ok' : 'no') + '" data-act="exReview" data-arg="' + k + '" aria-label="' + qLabel(q) + (E.ans[k].ok === true ? ' 정답' : ' 오답') + '">' + (q.n <= 30 ? q.n : q.n - 100) + '</button>'; }).join('') + '</div>';
-    return '<div class="session" style="gap:22px"><div><p class="muted" style="margin:0 0 6px">' + (full ? '제' + E.o.exam + '회 시험 결과' : '연습 결과') + '</p>' +
-      '<div class="score-line"><span class="pct num">' + E.score + '<small>/' + E.total + '점</small></span><span class="lede">' + pc + '%</span></div>' +
+    var grid = '<div class="qgrid">' + E.qs.map(function (q, k) { return '<button type="button" class="qg ' + (E.ans[k].ok === true ? 'ok' : 'no') + '" data-act="exReview" data-arg="' + k + '" aria-label="' + qLabel(q) + (E.ans[k].ok === true ? ' 정답' : ' 오답') + '">' + (q.gen ? '예' : q.n <= 30 ? q.n : q.n - 100) + '</button>'; }).join('') + '</div>';
+    return '<div class="session" style="gap:22px"><div><p class="muted" style="margin:0 0 6px">' + (full ? '제' + E.o.exam + '회 시험 결과' : E.mode === 'track' ? '속성 코스 · ' + TBY[E.o.track].name : '연습 결과') + '</p>' +
+      '<div class="score-line"><span class="pct num">' + E.score + '<small>/' + E.total + '점</small></span><span class="lede">' + pc + '%</span></div>' + trackBanner() +
       (full ? '<p class="note" style="margin-top:12px;background:' + (pass ? 'var(--good-bg)' : 'var(--bad-bg)') + '">' + (pass ? '합격선(140점)을 넘었어요.' : '합격선(140점)까지 ' + (E.total * EX_PASS - E.score) + '점 모자라요.') + '</p>' : '') + '</div>' +
       '<div class="stats"><div class="stat"><span>맞힌 문제</span><b class="num">' + (E.score / EX_PT) + ' / ' + E.qs.length + '</b></div><div class="stat"><span>걸린 시간</span><b class="num">' + fmt(E.elapsed) + '</b></div><div class="stat"><span>틀린 문제</span><b class="num">' + wrong.length + '</b></div></div>' +
       '<div class="group"><h2 class="sec">문제별 결과 · 눌러서 해설 보기</h2>' + grid + '</div>' +
       '<div class="group"><h2 class="sec">유형별 정답률</h2>' + rows + '</div>' +
-      '<div class="stack">' + (wrong.length ? '<button class="btn" type="button" data-act="exRetry">틀린 문제만 다시 풀기 (' + wrong.length + ')</button>' : '') + '<button class="btn sec" type="button" data-act="exAgain">' + (full ? '같은 회차 다시' : '같은 설정으로 다시') + '</button><button class="btn sec" type="button" data-act="exLeave">기출 화면으로</button></div></div>';
+      '<div class="stack">' + trackBtns() + (wrong.length ? '<button class="btn" type="button" data-act="exRetry">틀린 문제만 다시 풀기 (' + wrong.length + ')</button>' : '') + '<button class="btn sec" type="button" data-act="exAgain">' + (full ? '같은 회차 다시' : '같은 설정으로 다시') + '</button><button class="btn sec" type="button" data-act="exLeave">기출 화면으로</button></div></div>';
   }
   function exReviewSheet(k) {
     var q = E.qs[k], a = E.ans[k];
@@ -1558,7 +1566,7 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
       var rr = optRevQ(q, o);
       return '<div class="opt ' + cls + '" style="min-height:0;padding-left:46px"><kbd>' + n + '</kbd>' + esc(o) + (rr ? '<span class="rv">' + esc(rr) + '</span>' : '') + '</div>';
     }).join('') + '</div>' : '';
-    sheetOpen('<div class="grab"></div><div class="sheet-h"><span class="muted">' + qLabel(q) + ' · 제' + q.ex + '회</span><button class="iconbtn" type="button" data-act="closeSheet" aria-label="닫기">' + icon(IC.close) + '</button></div>' +
+    sheetOpen('<div class="grab"></div><div class="sheet-h"><span class="muted">' + qLabel(q) + (q.gen ? '' : ' · 제' + q.ex + '회') + '</span><button class="iconbtn" type="button" data-act="closeSheet" aria-label="닫기">' + icon(IC.close) + '</button></div>' +
       '<div class="exh" style="margin-bottom:6px"><span class="exi">' + TI[q.t][1] + '</span></div>' + exStemHtml(q) + opts +
       '<div class="card" style="margin-top:12px;display:grid;gap:4px"><span class="muted">정답</span><b style="font-size:1.25rem">' + esc(exAnsText(q)) + '</b>' + (q.kind !== 'mc' ? '<span class="muted">내 답: ' + esc(exMyText(q, a.r)) + '</span>' : '<span class="muted">내 답: ' + esc(exMyText(q, a.r)) + '</span>') + '</div>' + (a.h ? hMineHtml(q, a, true) : '') + exExplain(q));
   }
@@ -1568,7 +1576,7 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
       if (k === E.i) cls += ' cur';
       if (E.instant && a.ok === true) cls += ' ok'; else if (E.instant && a.ok === false) cls += ' no';
       else if (a.r !== undefined && a.r !== '' || a.p) cls += ' done';
-      return '<button type="button" class="' + cls + '" data-act="exJump" data-arg="' + k + '">' + (q.n <= 30 ? q.n : '주' + (q.n - 100)) + '</button>';
+      return '<button type="button" class="' + cls + '" data-act="exJump" data-arg="' + k + '">' + (q.gen ? '예' : q.n <= 30 ? q.n : '주' + (q.n - 100)) + '</button>';
     }).join('');
     var un = E.ans.filter(function (a) { return !(a.r !== undefined && a.r !== '' || a.p || a.ok !== undefined); }).length;
     sheetOpen('<div class="grab"></div><div class="sheet-h"><h3>문제 목록</h3><button class="iconbtn" type="button" data-act="closeSheet" aria-label="닫기">' + icon(IC.close) + '</button></div>' +
@@ -1707,7 +1715,170 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
     run();
   }
 
+  /* ---------- 합격 속성 코스 (기출 + 예상 문제) ---------- */
+  var TRACK = [
+    { id: 't1', name: '독음', sub: '한자어 독음 · 문장 속 독음', why: '시험의 30%, 쓰기가 없어 가장 빨리 올라요', types: ['read', 'sread'], gen: { read: 12 }, past: { read: 2, sread: 6 }, target: 0.9 },
+    { id: 't2', name: '객관식', sub: '4지선다 8유형', why: '한자 훈음만 알면 소거법으로 풀려요', types: ['same', 'syn', 'ant', 'rel', 'bad', 'hanja', 'mean', 'blank'], gen: { same: 4, mean: 4 }, past: { same: 2, syn: 2, ant: 2, rel: 1, bad: 2, hanja: 1, mean: 1, blank: 1 }, target: 0.85 },
+    { id: 't3', name: '훈음·보기형', sub: '훈음 쓰기 · 훈음에 맞는 한자 · 공통 한자(보기)', why: '보기에서 고르는 문제가 많아 점수가 잘 나와요', types: ['hun', 'from', 'pick2'], gen: { hun: 8, from: 5 }, past: { hun: 2, from: 2, pick2: 3 }, target: 0.9 },
+    { id: 't4', name: '한자어 쓰기', sub: '뜻과 독음을 보고 한자어 쓰기', why: '절반만 맞혀도 합격선에 여유가 생겨요', types: ['write'], gen: { write: 6 }, past: { write: 4 }, target: 0.7 },
+    { id: 't5', name: '마무리 (선택)', sub: '한자성어 · 잘못 쓴 한자 · 공통 한자(뜻)', why: '어렵고 문항이 적어요. 시간이 남을 때만', types: ['idiom', 'fix', 'common'], gen: { idiom: 4 }, past: { idiom: 2, fix: 2, common: 2 }, target: 0.6 }
+  ];
+  var TBY = {}; TRACK.forEach(function (t) { TBY[t.id] = t; });
+  var TSEQ = 0, CHM = null;
+  function chMaps() {
+    if (CHM) return CHM;
+    var eums = {}, byEum = {}, pool = [];
+    function add(c, alts, inPool) {
+      var arr = eums[c] || (eums[c] = []);
+      alts.forEach(function (a) { var s = sndOfAlt(a); if (s && arr.indexOf(s) < 0) arr.push(s); });
+      if (inPool && pool.indexOf(c) < 0) pool.push(c);
+    }
+    HJ.concat(XH).forEach(function (e) { add(e.k, e.alts, true); });
+    Object.keys(EXG.c).forEach(function (c) { if (c.length === 1) add(c, [EXG.c[c]], false); });
+    Object.keys(CHARHUN).forEach(function (c) { if (c.length === 1) add(c, CHARHUN[c].split(';'), false); });
+    Object.keys(eums).forEach(function (c) { eums[c].forEach(function (s) { (byEum[s] = byEum[s] || []).push(c); }); });
+    CHM = { eums: eums, byEum: byEum, pool: pool };
+    return CHM;
+  }
+  function wPick(arr, n, wf) {
+    return arr.map(function (e) { return { e: e, k: Math.pow(Math.random(), 1 / Math.max(0.05, wf(e))) }; })
+      .sort(function (a, b) { return b.k - a.k; }).slice(0, n).map(function (x) { return x.e; });
+  }
+  function tWeight(e) { return (e.ex + 1) * (1.15 - P_LVL[lvl(e.k)]); }
+  function gq(t, k, f) { f.t = t; f.kind = TI[t][2]; f.ex = '예상'; f.gen = 1; f.id = 'g' + (++TSEQ); f.n = 200 + TSEQ; f._k = k; return f; }
+  var GEN = {
+    read: function (n) {
+      var pool = exPool('w').filter(function (e) { return e.read && /^[가-힣]+$/.test(e.read); });
+      return wPick(pool, n, tWeight).map(function (e) { return gq('read', e.k, { s: e.main, a: e.read }); });
+    },
+    hun: function (n) {
+      return wPick(exPool('h'), n, tWeight).map(function (e) { return gq('hun', e.k, { s: e.main, a: e.alts[0], alt: e.alts.slice(1) }); });
+    },
+    from: function (n) {
+      var tg = wPick(exPool('h'), n, tWeight), used = {};
+      tg.forEach(function (e) { used[e.main] = 1; });
+      var others = shuffle(HJ.filter(function (e) { return !used[e.main]; })).slice(0, Math.max(3, 11 - tg.length)).map(function (e) { return e.main; });
+      var box = shuffle(tg.map(function (e) { return e.main; }).concat(others)).join('');
+      return tg.map(function (e) { return gq('from', e.k, { s: e.alts[0], a: e.main, b: box }); });
+    },
+    same: function (n) {
+      var M = chMaps(), out = [];
+      wPick(exPool('h'), n * 3, tWeight).forEach(function (e) {
+        if (out.length >= n) return;
+        var mine = M.eums[e.main] || [], snd = mine[0];
+        var homo = (M.byEum[snd] || []).filter(function (c) { return c !== e.main && M.pool.indexOf(c) >= 0; });
+        if (!homo.length) return;
+        var dis = shuffle(M.pool.filter(function (c) { return c !== e.main && (M.eums[c] || []).every(function (s) { return mine.indexOf(s) < 0; }); })).slice(0, 3);
+        if (dis.length < 3) return;
+        var ans = homo[Math.floor(Math.random() * homo.length)], opts = shuffle([ans].concat(dis));
+        out.push(gq('same', e.k, { s: e.main, o: opts, a: opts.indexOf(ans) + 1 }));
+      });
+      return out;
+    },
+    mean: function (n) {
+      var M = chMaps(), out = [];
+      wPick(exPool('w').filter(function (e) { return e.mean && e.main.length >= 2 && e.read && e.read.length === e.main.length; }), n * 3, tWeight).forEach(function (e) {
+        if (out.length >= n) return;
+        var cs = Array.from(e.main), cand = [];
+        cs.forEach(function (c, j) {
+          (M.byEum[e.read.charAt(j)] || []).forEach(function (h) { if (h !== c && M.pool.indexOf(h) >= 0) cand.push({ j: j, h: h }); });
+        });
+        cand = shuffle(cand);
+        var picked = [], pos = {};
+        cand.forEach(function (c) { if (picked.length < 3 && !pos[c.j]) { pos[c.j] = 1; picked.push(c); } });
+        cand.forEach(function (c) { if (picked.length < 3 && picked.indexOf(c) < 0) picked.push(c); });
+        if (picked.length < 3) return;
+        var vs = picked.map(function (c) { var a = cs.slice(); a[c.j] = c.h; return a.join(''); });
+        if (vs.filter(function (v, i) { return vs.indexOf(v) === i && v !== e.main; }).length < 3) return;
+        var opts = shuffle([e.main].concat(vs));
+        out.push(gq('mean', e.k, { s: e.mean, o: opts, a: opts.indexOf(e.main) + 1 }));
+      });
+      return out;
+    },
+    write: function (n) {
+      var pool = exPool('w').filter(function (e) { return e.mean && e.read && /^[가-힣]+$/.test(e.read); });
+      return wPick(pool, n, tWeight).map(function (e) { return gq('write', e.k, { s: e.mean + ' → [ ' + e.read + ' ]', a: e.main }); });
+    },
+    idiom: function (n) {
+      var pool = exPool('i').filter(function (e) { return Array.from(e.main).length === 4 && e.mean; });
+      return wPick(pool, n, tWeight).map(function (e) {
+        var cs = Array.from(e.main), pos = shuffle([0, 1, 2, 3]).slice(0, 2).sort(), s = cs.map(function (c, j) { return pos.indexOf(j) >= 0 ? '○' : c; }).join(' ');
+        return gq('idiom', e.k, { s: s, a: pos.map(function (j) { return cs[j]; }).join(', '), x: '[ ' + e.read + ' ] ' + e.mean });
+      });
+    }
+  };
+  function trackPast(types, spec) {
+    var miss = {}; exMissList().forEach(function (id) { miss[id] = 1; });
+    var out = [], used = {};
+    types.forEach(function (t) {
+      var n = spec[t] || 0; if (!n) return;
+      var pool = [].concat.apply([], EXAMS.map(function (x) { return x.q.filter(function (q) { return q.t === t; }); }));
+      wPick(pool, n, function (q) { return miss[q.id] ? 3 : 1; }).forEach(function (q) { if (!used[q.id]) { used[q.id] = 1; out.push(q); } });
+    });
+    return out;
+  }
+  function trackBuild(st) {
+    var qs = [];
+    Object.keys(st.gen).forEach(function (t) { qs = qs.concat(GEN[t](st.gen[t])); });
+    qs = qs.concat(trackPast(st.types, st.past));
+    return shuffle(qs);
+  }
+  function trackStart(id) {
+    var st = TBY[id], qs = trackBuild(st);
+    if (!qs.length) { toast('풀 수 있는 문제가 없어요.'); return; }
+    if (EXUI.hand && !STROKES) ensureStrokes(function () {});
+    exBegin(qs, { mode: 'track', instant: true, exam: '', time: false, hand: !!EXUI.hand, track: id });
+    E.redo = function () { trackStart(id); };
+  }
+  function trackState(id) { return (ST.track && ST.track[id]) || { tries: 0, best: 0, clear: 0 }; }
+  function trackRecord(id, ok, n) {
+    if (!TBY[id]) return;
+    var T = ST.track || (ST.track = {}), s = T[id] || (T[id] = { tries: 0, best: 0, clear: 0 }), acc = n ? ok / n : 0;
+    s.tries++; s.last = acc; s.best = Math.max(s.best, acc);
+    if (acc >= TBY[id].target) s.clear++;
+    E.trackRes = { acc: acc, pass: acc >= TBY[id].target, first: acc >= TBY[id].target && s.clear === 1 };
+  }
+  function trackNextId() {
+    for (var i = 0; i < TRACK.length - 1; i++) if (!trackState(TRACK[i].id).clear) return TRACK[i].id;
+    return trackState('t5').clear ? null : 't5';
+  }
+  function trackBanner() {
+    if (!E || E.mode !== 'track' || !E.trackRes) return '';
+    var st = TBY[E.o.track], r = E.trackRes, pc = Math.round(r.acc * 100), tg = Math.round(st.target * 100);
+    return '<p class="note" style="margin-top:12px;background:' + (r.pass ? 'var(--good-bg)' : 'var(--bad-bg)') + '">' +
+      (r.pass ? (r.first ? '🎉 ' + st.name + ' 단계 통과! ' : st.name + ' 단계 목표를 넘었어요. ') + '정답률 ' + pc + '% (목표 ' + tg + '%)' : '목표 정답률 ' + tg + '%까지 ' + Math.max(1, Math.ceil((st.target - r.acc) * E.qs.length)) + '문제 모자라요. 틀린 문제를 먼저 다시 풀어 보세요.') + '</p>';
+  }
+  function trackBtns() {
+    if (!E || E.mode !== 'track') return '';
+    var nx = trackNextId(), pass = E.trackRes && E.trackRes.pass;
+    return (pass && nx && nx !== E.o.track ? '<button class="btn" type="button" data-act="trackStart" data-arg="' + nx + '">다음: ' + TBY[nx].name + ' 단계</button>' : '') +
+      '<button class="btn sec" type="button" data-act="goTrack">속성 코스 목록</button>';
+  }
+  function trackCard() {
+    var done = TRACK.filter(function (t) { return trackState(t.id).clear; }).length, nx = trackNextId();
+    return '<button type="button" class="card homeex" data-act="goTrack"><span><b>합격 속성 코스</b><br><span class="muted">' + (nx ? '다음: ' + TBY[nx].name + ' · ' : '') + done + ' / ' + TRACK.length + ' 단계 통과 · 기출 + 예상 문제</span></span><span class="go">시작 ›</span></button>';
+  }
+  function vTrack() {
+    var nx = trackNextId(), done = TRACK.filter(function (t) { return trackState(t.id).clear; }).length;
+    var cnt = { t1: 30, t2: 30, t3: 19, t4: 10, t5: 11 };
+    var rows = TRACK.map(function (t, i) {
+      var s = trackState(t.id), cls = s.clear ? 'good' : (nx === t.id ? 'warn' : '');
+      return '<div class="card trk' + (nx === t.id ? ' now' : '') + '"><div class="trk-h"><b>' + (i + 1) + '. ' + t.name + '</b>' +
+        (s.clear ? '<span class="pill good">✓ 통과</span>' : nx === t.id ? '<span class="pill warn">지금 할 차례</span>' : '') + '</div>' +
+        '<p class="muted" style="margin:0;font-size:.8125rem">' + t.sub + ' · 시험 회당 ' + cnt[t.id] + '문항</p>' +
+        '<p style="margin:0;font-size:.875rem">' + t.why + '</p>' +
+        '<div class="trk-f"><span class="muted num" style="font-size:.8125rem">목표 ' + Math.round(t.target * 100) + '% · ' + (s.tries ? '최고 ' + Math.round(s.best * 100) + '% · ' + s.tries + '회 도전' : '아직 도전 전') + '</span>' +
+        '<button class="btn sm' + (nx === t.id ? '' : ' sec') + '" type="button" data-act="trackStart" data-arg="' + t.id + '">' + (s.tries ? '다시 도전' : '시작') + '</button></div></div>';
+    }).join('');
+    return '<div class="page"><div><p class="hello">합격까지 가장 빠른 순서</p><p class="hello-sub">' + done + ' / ' + TRACK.length + ' 단계 통과</p></div>' +
+      '<p class="muted" style="margin:0;line-height:1.55">합격은 100문항 중 70문항이면 돼요. 점수가 큰 유형부터 한 단계씩 끝내세요. 기출문제와, 기출에 많이 나온 한자·단어로 새로 만든 예상 문제가 섞여 나오고, 풀 때마다 바로 정답을 알려 줘요.</p>' +
+      '<div class="group"><h2 class="sec">쓰기 문제 방식</h2>' + seg([[1, '손글씨로 쓰기'], [0, '입력·보기 선택']], EXUI.hand, 'exHand') + '</div>' +
+      rows + '<p class="muted" style="font-size:.75rem;line-height:1.5;margin:0">예상 문제는 앱이 자동으로 만든 연습 문제라 실제 시험과 표현이 조금 다를 수 있어요. 틀린 항목은 복습 목록에 들어가고, 푼 결과는 합격 예측에도 반영돼요.</p></div>';
+  }
+
   var EXACT = {
+    trackStart: function (id) { trackStart(id); },
+    goTrack: function () { go('track'); },
     coachType: function (t) { var u = EXUI; u.mode = 'practice'; u.types = {}; u.types[t] = 1; EXAMS.forEach(function (x) { u.sel[x.id] = 1; }); u.count = 10; u.instant = 1; u.order = 'rand'; exStart(); },
     coachMiss: function () { var u = EXUI; u.mode = 'miss'; u.types = {}; u.count = 20; u.instant = 1; u.order = 'rand'; exStart(); },
     coachCards: function (cat) { coachStudy(cat, 'cards'); },
