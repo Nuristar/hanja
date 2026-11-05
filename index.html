@@ -1184,7 +1184,7 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
       '<div class="set-grp"><h4>기록 백업</h4><p>기록은 이 기기에만 저장돼요. 기기를 바꿀 때 복사해서 옮기세요.</p>' +
       '<div class="pair"><button class="btn sec sm" type="button" data-act="exportData" style="width:100%">기록 복사</button><button class="btn sec sm" type="button" data-act="importOpen" style="width:100%">기록 복원</button></div><div id="bk"></div></div>' +
       '<div class="set-grp"><h4>기록 초기화</h4><p>학습 기록, 오답 노트, 즐겨찾기가 모두 지워져요.</p><button class="btn bad sm" type="button" data-act="resetAsk" style="width:100%">' + (UI.resetArmed ? '정말 지울까요? 한 번 더 누르세요' : '모든 기록 지우기') + '</button></div>' +
-      '<div class="set-grp"><p>한자 ' + HJ.length + '자 · 단어 ' + WD.length + '개 · 사자성어 ' + ID.length + '개 · 진흥회 한자 2급 대비 · 버전 13</p><p class="muted" style="font-size:.75rem;line-height:1.5">획순 데이터: Make Me a Hanzi(Arphic Public License), KanjiVG(CC BY-SA 3.0, Ulrich Apel 외). 쓰기 엔진: Hanzi Writer(MIT).</p></div>');
+      '<div class="set-grp"><p>한자 ' + HJ.length + '자 · 단어 ' + WD.length + '개 · 사자성어 ' + ID.length + '개 · 진흥회 한자 2급 대비 · 버전 14</p><p class="muted" style="font-size:.75rem;line-height:1.5">획순 데이터: Make Me a Hanzi(Arphic Public License), KanjiVG(CC BY-SA 3.0, Ulrich Apel 외). 쓰기 엔진: Hanzi Writer(MIT).</p></div>');
   }
 
   /* ---------- 렌더 ---------- */
@@ -2424,7 +2424,7 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
     if (!pool.length) { toast('학습할 항목이 없어요.'); return; }
     var list = o.order === 'rand' ? shuffle(pool) : pool.slice();
     if (o.count) list = list.slice(0, o.count);
-    C = { type: 'card', queue: list.slice(), total: list.length, pos: 0, flipped: false, know: [], dont: [], retried: {}, face: o.face, o: o, redo: redo, t0: Date.now(), done: false };
+    C = { type: 'card', queue: list.slice(), total: list.length, cleared: 0, reps: 0, flipped: false, know: [], dont: [], miss: {}, face: o.face, o: o, redo: redo, t0: Date.now(), done: false };
     UI.sess = C; render();
   }
   function cardFront(e, face) {
@@ -2449,30 +2449,38 @@ var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof wi
     return '<div class="back-w" style="font-size:2.25rem">' + e.main + '</div><div class="back-mean" style="font-size:1.5rem">' + esc(e.read) + '</div>' + bdHtml(e) + '<div class="back-sub" style="max-width:32ch">' + esc(e.mean) + '</div>' + g;
   }
   function cardRender() {
-    var e = C.queue[C.pos];
-    var seen = Math.min(C.pos, C.queue.length);
+    var e = C.queue[0];
     $('#view').innerHTML = '<div class="session"><div><div class="sbar"><button class="iconbtn" type="button" data-act="quit" aria-label="그만하기">' + icon(IC.close) + '</button>' +
-      '<div class="prog">' + Math.min(C.pos + 1, C.queue.length) + ' / ' + C.queue.length + '</div>' +
+      '<div class="prog">' + C.cleared + ' / ' + C.total + (C.miss[e.k] ? ' <span class="pill" style="margin-left:6px;padding:2px 8px;font-size:.75rem">다시 보기</span>' : '') + '</div>' +
       '<button class="iconbtn" type="button" data-act="fav" data-arg="' + esc(e.k) + '" aria-label="즐겨찾기" aria-pressed="' + (!!ST.fav[e.k]) + '" style="margin:0 -10px 0 0;color:' + (ST.fav[e.k] ? 'var(--seal)' : 'var(--ink-3)') + '">' + icon(IC.star, ST.fav[e.k] ? ' style="fill:currentColor"' : '') + '</button></div>' +
-      '<div class="meter" aria-hidden="true"><i style="width:' + (seen / C.queue.length * 100) + '%"></i></div></div>' +
+      '<div class="meter" aria-hidden="true"><i style="width:' + (C.cleared / C.total * 100) + '%"></i></div></div>' +
       '<button type="button" class="fcard" data-act="cardFlip" aria-label="카드 뒤집기">' + (C.flipped ? cardBack(e, C.face) : cardFront(e, C.face)) + '</button>' +
-      (C.flipped ? '<div class="pair"><button class="btn bad" type="button" data-act="cardDont">✕ 아직 몰라요</button><button class="btn good" type="button" data-act="cardKnow">○ 알아요</button></div><p class="sum">← 몰라요 · 알아요 →</p>' : '<button class="btn sec" type="button" data-act="cardFlip">뒤집기</button><p class="sum">스페이스바나 카드를 눌러 뒤집어요</p>') + '</div>';
+      (C.flipped ? '<div class="pair"><button class="btn bad" type="button" data-act="cardDont">✕ 아직 몰라요</button><button class="btn good" type="button" data-act="cardKnow">○ 알아요</button></div><p class="sum">← 몰라요 · 알아요 →<br>몰라요를 누르면 알 때까지 다시 나와요 (남은 카드 ' + C.queue.length + '장)</p>' : '<button class="btn sec" type="button" data-act="cardFlip">뒤집기</button><p class="sum">스페이스바나 카드를 눌러 뒤집어요</p>') + '</div>';
   }
   function cardMark(ok) {
     if (!C || !C.flipped || C.done) return;
-    var e = C.queue[C.pos];
-    rec(e, ok);
-    if (ok) { if (C.know.indexOf(e) < 0 && !C.retried[e.k]) C.know.push(e); }
-    else { if (C.dont.indexOf(e) < 0) C.dont.push(e); if (!C.retried[e.k]) { C.retried[e.k] = 1; C.queue.push(e); } }
-    C.pos++; C.flipped = false;
-    if (C.pos >= C.queue.length) { C.done = true; C.elapsed = Date.now() - C.t0; render(); } else cardRender();
+    var e = C.queue.shift(), first = !C.miss.hasOwnProperty(e.k);
+    /* 처음 보는 판정만 학습 기록에 반영: 몰라요는 복습 대상으로 남기고, 반복해서 맞힌 것은 진도를 올리지 않는다 */
+    if (first) rec(e, ok);
+    if (ok) {
+      if (first) C.know.push(e);
+      C.cleared++;
+    } else {
+      C.miss[e.k] = (C.miss[e.k] || 0) + 1; C.reps++;
+      if (C.dont.indexOf(e) < 0) C.dont.push(e);
+      /* 알 때까지 반복: 몇 장 뒤에 다시 보여 준다(틀릴수록 조금씩 더 간격을 둔다) */
+      var gap = Math.min(2 + C.miss[e.k], 6);
+      C.queue.splice(Math.min(gap, C.queue.length), 0, e);
+    }
+    C.flipped = false;
+    if (!C.queue.length) { C.done = true; C.elapsed = Date.now() - C.t0; render(); } else cardRender();
   }
   function cardResult() {
     var knowN = C.total - C.dont.length;
     return '<div class="session" style="gap:22px"><div><p class="muted" style="margin:0 0 6px">카드 학습 완료</p><div class="score-line"><span class="pct num">' + knowN + '<small>/' + C.total + '</small></span><span class="lede">처음부터 안 항목 ' + knowN + '개</span></div></div>' +
-      '<div class="stats"><div class="stat"><span>알았어요</span><b class="num">' + knowN + '</b></div><div class="stat"><span>몰랐어요</span><b class="num">' + C.dont.length + '</b></div><div class="stat"><span>걸린 시간</span><b class="num">' + fmt(C.elapsed) + '</b></div></div>' +
-      (C.dont.length ? '<div class="group"><h2 class="sec">모르는 항목 ' + C.dont.length + '개</h2><div class="wrong-grid">' + C.dont.map(wcard).join('') + '</div></div>' : '<p class="note">모두 알고 있었어요. 퀴즈로 한 번 더 확인해 보세요.</p>') +
-      '<div class="stack"><button class="btn" type="button" data-act="cardAgain">한 세트 더</button>' + (C.dont.length ? '<button class="btn sec" type="button" data-act="cardQuizBad">모르는 항목 퀴즈로 확인</button>' : '') + '<button class="btn sec" type="button" data-act="leave">처음으로</button></div></div>';
+      '<div class="stats"><div class="stat"><span>바로 알았어요</span><b class="num">' + knowN + '</b></div><div class="stat"><span>반복해서 외웠어요</span><b class="num">' + C.dont.length + '</b></div><div class="stat"><span>걸린 시간</span><b class="num">' + fmt(C.elapsed) + '</b></div></div>' +
+      (C.dont.length ? '<div class="group"><h2 class="sec">반복해서 외운 항목 ' + C.dont.length + '개 · 다시 본 횟수 ' + C.reps + '번</h2><div class="wrong-grid">' + C.dont.map(wcard).join('') + '</div></div>' : '<p class="note">모두 한 번에 알았어요. 퀴즈로 한 번 더 확인해 보세요.</p>') +
+      '<div class="stack"><button class="btn" type="button" data-act="cardAgain">한 세트 더</button>' + (C.dont.length ? '<button class="btn sec" type="button" data-act="cardQuizBad">반복한 항목 퀴즈로 확인</button>' : '') + '<button class="btn sec" type="button" data-act="leave">처음으로</button></div></div>';
   }
 
   /* ---------- 퀴즈: 한자 직접 쓰기 (한 번에 쓰고 맞는지 대조) ---------- */
